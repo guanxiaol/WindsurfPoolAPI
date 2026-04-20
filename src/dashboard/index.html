@@ -1732,12 +1732,12 @@ const App = {
       status.style.color = '#22c55e';
       status.textContent = `登录成功 ${r.email || label} 已加入账号池`;
       this.toast(`${label} 登录成功`, 'success');
-      this.loadAccounts?.();
+      this.loadAccounts();
       const entry = { time: new Date().toISOString(), email: r.email || label, proxy: '直连', status: 'ok', method: label };
       this.loginHistory.unshift(entry);
       if (this.loginHistory.length > 50) this.loginHistory.length = 50;
       localStorage.setItem('wl_history', JSON.stringify(this.loginHistory));
-      this.renderLoginHistory?.();
+      this.renderLoginHistory();
     } catch (err) {
       status.style.color = '#ef4444';
       status.textContent = `${label} 登录失败: ${err.message}`;

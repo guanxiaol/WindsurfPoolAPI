@@ -162,7 +162,7 @@ export class WindsurfClient {
   async cascadeChat(messages, modelEnum, modelUid, opts = {}) {
     const { onChunk, onEnd, onError, signal, reuseEntry, toolPreamble } = opts;
     const aborted = () => signal?.aborted;
-    const inputChars = messages.reduce((n, m) => n + (typeof m?.content === 'string' ? m.content.length : 0), 0);
+    const inputChars = messages.reduce((n, m) => n + contentToString(m?.content).length, 0);
 
     log.debug(`CascadeChat: uid=${modelUid} enum=${modelEnum} msgs=${messages.length} reuse=${!!reuseEntry}`);
 
