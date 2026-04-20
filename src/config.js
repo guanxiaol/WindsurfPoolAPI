@@ -28,6 +28,25 @@ function loadEnv() {
 
 loadEnv();
 
+// Derive the default Language Server binary path from the host platform/arch.
+// Windsurf ships these filenames inside its tarball. Users can override with
+// LS_BINARY_PATH if they keep the binary elsewhere.
+function defaultLsBinaryPath() {
+  const dir = '/opt/windsurf';
+  const { platform, arch } = process;
+  // macOS: binaries ship with the .app bundle, but people commonly symlink
+  // them to /opt/windsurf as well. Fall through to linux-x64 only if the user
+  // didn't vendor the darwin binary.
+  if (platform === 'darwin') {
+    return `${dir}/language_server_macos_${arch === 'arm64' ? 'arm' : 'x64'}`;
+  }
+  if (platform === 'win32') {
+    return `${dir}\\language_server_windows_x64.exe`;
+  }
+  // Linux (and anything else unixy)
+  return `${dir}/language_server_linux_${arch === 'arm64' ? 'arm' : 'x64'}`;
+}
+
 export const config = {
   port: parseInt(process.env.PORT || '3003', 10),
   apiKey: process.env.API_KEY || '',
@@ -42,8 +61,10 @@ export const config = {
   maxTokens: parseInt(process.env.MAX_TOKENS || '8192', 10),
   logLevel: process.env.LOG_LEVEL || 'info',
 
-  // Language server
-  lsBinaryPath: process.env.LS_BINARY_PATH || '/opt/windsurf/language_server_linux_x64',
+  // Language server — auto-detect default binary name by platform/arch so
+  // Windsurf's per-OS LS binaries just work out of the box. User can always
+  // override with LS_BINARY_PATH env var.
+  lsBinaryPath: process.env.LS_BINARY_PATH || defaultLsBinaryPath(),
   lsPort: parseInt(process.env.LS_PORT || '42100', 10),
 
   // Dashboard

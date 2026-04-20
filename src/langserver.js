@@ -13,9 +13,10 @@ import http2 from 'http2';
 import net from 'net';
 import { resolve as pathResolve } from 'path';
 import { mkdirSync } from 'fs';
-import { log } from './config.js';
+import { log, config } from './config.js';
 
-const DEFAULT_BINARY = '/opt/windsurf/language_server_linux_x64';
+// Default picked up from config.js (which auto-detects by platform/arch).
+const DEFAULT_BINARY = config.lsBinaryPath;
 const DEFAULT_DATA_DIR = pathResolve(process.env.LS_DATA_DIR || './data');
 const DEFAULT_PORT = 42100;
 const DEFAULT_CSRF = 'windsurf-api-csrf-fixed-token';
