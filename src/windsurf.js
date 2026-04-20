@@ -111,8 +111,16 @@ function buildChatMessage(content, source, conversationId) {
   ];
 
   if (source === SOURCE.ASSISTANT) {
-    // Assistant uses plain string for field 5
-    parts.push(writeStringField(5, content));
+    // Assistant goes in ChatMessage.action (field 6), not .intent (field 5).
+    // Proto: ChatMessageAction { ChatMessageActionGeneric generic = 1; }
+    //        ChatMessageActionGeneric { string text = 1; }
+    // Previous code wrote a raw string into field 5 which happens to share
+    // wire type (length-delimited) with the expected message, so short
+    // replies slipped through parsing by coincidence — real multi-turn
+    // conversations tripped the LS with "invalid wire-format data".
+    const actionGeneric = writeStringField(1, content);    // ChatMessageActionGeneric.text
+    const action = writeMessageField(1, actionGeneric);    // ChatMessageAction.generic
+    parts.push(writeMessageField(6, action));
   } else {
     // User/System/Tool use ChatMessageIntent { IntentGeneric { text } }
     const intentGeneric = writeStringField(1, content);    // IntentGeneric.text
