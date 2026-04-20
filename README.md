@@ -1,439 +1,399 @@
-# WindsurfAPI
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" />
+  <img src="https://img.shields.io/badge/Models-87%2B-blueviolet?style=flat-square" />
+  <img src="https://img.shields.io/badge/Zero_Dependencies-yes-success?style=flat-square" />
+  <img src="https://img.shields.io/badge/v2.0-Latest-orange?style=flat-square" />
+</p>
 
-> **Windsurf 后端 → OpenAI / Anthropic 双兼容的无头 API 代理。** 零 npm 依赖，Node 20 纯内置模块实现。
+<h1 align="center">WindsurfPoolAPI</h1>
 
-把 [Windsurf](https://windsurf.com)（原 Codeium）账号的 80+ 个 AI 模型以标准 OpenAI / Anthropic 接口对外暴露。支持多账号负载均衡、token/credit 精细统计、Dashboard 管理后台、工具调用、流式输出。
+<p align="center">
+  <b>Enterprise-grade multi-account pool proxy for Windsurf AI platform.</b><br/>
+  Expose 87+ models (Claude / GPT / Gemini / DeepSeek / Grok / Qwen) via standard OpenAI & Anthropic APIs.<br/>
+  <sub>企业级 Windsurf 多账号池化 API 代理 —— 87+ 模型，OpenAI / Anthropic 双协议兼容</sub>
+</p>
 
----
-
-## 严正声明
-
-未经作者书面授权，**禁止**将本项目用于任何商业用途、付费代部署、中转转售或包装成服务对外销售。违者保留追责权利。个人学习/研究/自用不受限。
-
----
-
-## 特性
-
-- **双协议兼容** — `/v1/chat/completions`（OpenAI）+ `/v1/messages`（Anthropic，Anthropic 原生端点）
-- **80+ 模型** — Claude / GPT / Gemini / DeepSeek / Grok / Qwen / Kimi / Windsurf SWE，启动自动拉取最新 catalog
-- **多账号池** — 按剩余容量均衡，自动故障转移，per-model rate-limit 隔离
-- **Token + Credit 精细统计** — 按 API 路径 × 模型分层聚合，细到每次请求的 `input/output/cached` token、延迟、花销
-- **统计数据导出/导入** — CLIProxyAPI 兼容 schema，JSON 可备份迁移，幂等去重合并
-- **Dashboard 管理后台** — 单页 SPA（简体中文），覆盖账号管理、代理配置、实时日志、使用图表、封禁侦测
-- **工具调用** — Prompt-level `<tool_call>` 协议兼容，Cursor / Aider 等 AI 编程工具 直接可用
-- **流式 SSE** — OpenAI 格式，支持 `stream_options.include_usage` 终端 usage chunk
-- **Cascade 对话复用**（实验）— 多轮会话复用 `cascade_id`，减少重复传输
-- **零 npm 依赖** — 纯 Node.js 内置模块，安装即启动
+<p align="center">
+  <a href="#-quick-start--快速开始">Quick Start</a> ·
+  <a href="#-features--核心特性">Features</a> ·
+  <a href="#-dashboard--管理后台">Dashboard</a> ·
+  <a href="#-api-reference--接口文档">API Reference</a> ·
+  <a href="#-deployment--部署指南">Deployment</a> ·
+  <a href="#-faq--常见问题">FAQ</a>
+</p>
 
 ---
 
-## 快速开始
+## ⚠️ Disclaimer / 声明
 
-### 前置条件
+This project is for **personal learning, research, and self-hosting only**. Commercial use, resale, paid deployment, or repackaging as a service without written authorization is **strictly prohibited**.
+
+本项目仅供**个人学习、研究、自用**。未经作者书面授权，禁止任何商业用途、付费代部署、中转转售或包装成服务对外销售。
+
+---
+
+## ✨ Features / 核心特性
+
+| Feature | Description |
+| :--- | :--- |
+| **Dual Protocol** | `/v1/chat/completions` (OpenAI) + `/v1/messages` (Anthropic native) |
+| **87+ Models** | Claude 4.7 · GPT-5.4 · Gemini 3.1 · DeepSeek R1 · Grok 3 · Qwen 3 · Kimi K2.5 and more |
+| **Multi-Account Pool** | Capacity-based load balancing, automatic failover, per-model rate-limit isolation |
+| **Token & Credit Analytics** | Per-API × per-model aggregation down to individual request level |
+| **Admin Dashboard** | Full-featured SPA: account management, proxy config, real-time logs, usage charts |
+| **Batch Operations** | Select multiple accounts, enable/disable in one click |
+| **OAuth Login** | Google / GitHub Firebase OAuth + manual token refresh |
+| **Dynamic Stall Detection** | Input-length-aware timeout (30s–90s) prevents false positives on large contexts |
+| **Persistent State** | All settings, account status, tokens survive restarts |
+| **Tool Calling** | `<tool_call>` protocol compatible — works with Cursor, Aider, and other AI coding tools |
+| **Streaming SSE** | OpenAI format with `stream_options.include_usage` support |
+| **Zero Dependencies** | Pure Node.js built-in modules, nothing to install |
+
+<details>
+<summary><b>中文特性列表</b></summary>
+
+- **双协议兼容** — OpenAI + Anthropic 原生端点，无需任何中间件
+- **87+ 模型** — 启动时自动拉取 Windsurf 最新 catalog，实时更新
+- **多账号池** — 按剩余容量均衡分配，自动故障转移，per-model 限速隔离
+- **Token + Credit 精细统计** — 按 API × 模型分层聚合，精确到单次请求
+- **Dashboard 管理后台** — 账号管理、代理配置、实时日志、使用图表、封禁侦测
+- **批量操作** — 一键多选账号批量启用/停用
+- **OAuth 登录** — 支持 Google/GitHub Firebase OAuth 登录
+- **动态超时检测** — 根据输入长度自适应超时阈值（30s~90s），大上下文不误判
+- **全持久化** — 所有设置、账号状态、Token 均持久化存储，重启不丢失
+- **零依赖** — 纯 Node.js 内置模块，开箱即用
+
+</details>
+
+---
+
+## 🚀 Quick Start / 快速开始
+
+### Prerequisites / 前置条件
 
 - **Node.js ≥ 20**
-- **Windsurf Language Server 二进制** `language_server_linux_x64`（从已安装的 Windsurf 客户端里取）
-- 至少一个 Windsurf 账号（免费版也可，支持的模型会减少）
+- **Windsurf Language Server** binary (`language_server_linux_x64` or `language_server_darwin_arm64`)
+- At least one Windsurf account (Free tier supports limited models)
 
-### 本地启动
+### Install & Run / 安装启动
 
 ```bash
-git clone https://github.com/guanxiaol/WindsurfAPI.git
-cd WindsurfAPI
+git clone https://github.com/guanxiaol/WindsurfPoolAPI.git
+cd WindsurfPoolAPI
 
-# 放置 Language Server 二进制
+# Place Language Server binary / 放置 Language Server 二进制
 sudo mkdir -p /opt/windsurf
 sudo cp /path/to/language_server_linux_x64 /opt/windsurf/
 sudo chmod +x /opt/windsurf/language_server_linux_x64
 
-# 可选：创建 .env 覆盖默认配置
-cp .env.example .env
-# 编辑 .env 设置 DASHBOARD_PASSWORD 等
+# Optional: configure / 可选配置
+cp .env.example .env    # Edit API_KEY, DASHBOARD_PASSWORD, etc.
 
-# 启动
+# Start / 启动
 node src/index.js
 ```
 
-服务监听 `http://0.0.0.0:3003`，Dashboard 在 `http://localhost:3003/dashboard`。
+> **macOS** — Run `bash scripts/install-macos.sh` for auto-start on login.
+>
+> **Windows** — Run `scripts\install-windows.bat` for guided installation.
 
-### Docker 启动
+Dashboard: `http://localhost:3003/dashboard`
+
+### Docker
 
 ```bash
 docker compose up -d --build
 ```
 
-注意 `docker-compose.yml` 会把 `/opt/windsurf` 只读挂载进容器，请先把 Language Server 二进制放在宿主机的 `/opt/windsurf/` 下。
+Mount the LS binary at `/opt/windsurf/` on the host before starting.
 
 ---
 
-## 环境变量
+## 🔑 Account Management / 账号管理
 
-全部可选，留空走默认值。
-
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `PORT` | `3003` | HTTP 服务器端口 |
-| `API_KEY` | _（空）_ | `/v1/*` 端点的鉴权 key，空则开放访问 |
-| `DASHBOARD_PASSWORD` | _（空）_ | Dashboard 后台密码，空则无需鉴权 |
-| `DEFAULT_MODEL` | `claude-4.5-sonnet-thinking` | 未指定 model 时的默认值 |
-| `MAX_TOKENS` | `8192` | 默认最大输出 token 数 |
-| `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
-| `LS_BINARY_PATH` | `/opt/windsurf/language_server_linux_x64` | Language Server 路径 |
-| `LS_PORT` | `42100` | Language Server gRPC 端口 |
-| `CODEIUM_API_URL` | `https://server.self-serve.windsurf.com` | Windsurf 后端 URL，一般不改 |
-
----
-
-## API 端点
-
-### OpenAI 兼容
+> ⚠️ **Always use Token login!** / **必须使用 Token 方式登录！**
+>
+> Windsurf has a known bug where email/password login may route requests to the wrong account.
+>
+> Windsurf 官方存在 bug：邮箱/密码登录可能导致请求路由到错误账号。
+>
+> **Get your token** / **获取 Token**：[https://windsurf.com/editor/show-auth-token?workflow=](https://windsurf.com/editor/show-auth-token?workflow=)
 
 ```bash
-# 聊天补全（非流式）
-curl http://localhost:3003/v1/chat/completions \
+# ✅ Add account via Token (recommended / 推荐)
+curl -X POST http://localhost:3003/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [{"role": "user", "content": "你好"}],
-    "stream": false
-  }'
+  -d '{"token": "your-windsurf-token"}'
 
-# 流式
-curl -N http://localhost:3003/v1/chat/completions \
+# Batch add / 批量添加
+curl -X POST http://localhost:3003/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"model":"claude-4.5-sonnet","messages":[{"role":"user","content":"写首诗"}],"stream":true}'
+  -d '{"accounts": [{"token": "t1"}, {"token": "t2"}]}'
 
-# 模型列表
-curl http://localhost:3003/v1/models
+# List accounts / 列出账号
+curl http://localhost:3003/auth/accounts
+
+# Remove / 删除
+curl -X DELETE http://localhost:3003/auth/accounts/{id}
 ```
 
-### Anthropic 兼容（原生端点）
+---
+
+## 📡 API Reference / 接口文档
+
+### OpenAI Compatible / OpenAI 兼容
+
+```bash
+curl http://localhost:3003/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Hello!"}],
+    "stream": false
+  }'
+```
+
+### Anthropic Compatible / Anthropic 兼容
 
 ```bash
 curl http://localhost:3003/v1/messages \
   -H "Content-Type: application/json" \
   -H "anthropic-version: 2023-06-01" \
+  -H "x-api-key: sk-your-api-key" \
   -d '{
-    "model": "claude-4.5-sonnet",
+    "model": "claude-sonnet-4.6",
     "max_tokens": 1024,
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
 
-Anthropic SDK 客户端可以这样用：
+### Environment Variables / 环境变量
 
-```bash
-export ANTHROPIC_BASE_URL=http://localhost:3003
-export ANTHROPIC_AUTH_TOKEN=sk-your-dashboard-password
-claude
-```
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PORT` | `3003` | HTTP server port |
+| `API_KEY` | _(empty)_ | Auth key for `/v1/*` endpoints. Empty = open access |
+| `DASHBOARD_PASSWORD` | _(empty)_ | Dashboard admin password |
+| `DEFAULT_MODEL` | `claude-4.5-sonnet-thinking` | Default model when none specified |
+| `MAX_TOKENS` | `8192` | Default max output tokens |
+| `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
+| `LS_BINARY_PATH` | `/opt/windsurf/language_server_linux_x64` | Language Server path |
+| `LS_PORT` | `42100` | Language Server gRPC port |
 
-### 账号管理
+### Dashboard API
 
-> ⚠️ **强烈建议使用 Token 方式登录！**
+All endpoints require `X-Dashboard-Password` header.
+
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/dashboard/api/overview` | System overview |
+| `GET` | `/dashboard/api/accounts` | List all accounts |
+| `POST` | `/dashboard/api/accounts/batch-status` | Batch enable/disable accounts |
+| `POST` | `/dashboard/api/oauth-login` | OAuth login (Google/GitHub) |
+| `POST` | `/dashboard/api/accounts/:id/refresh-token` | Refresh Firebase token |
+| `POST` | `/dashboard/api/accounts/:id/rate-limit` | Check account capacity |
+| `GET` | `/dashboard/api/usage` | Full usage statistics |
+| `GET` | `/dashboard/api/usage/export` | Export stats as JSON |
+| `POST` | `/dashboard/api/usage/import` | Import stats (auto-dedup) |
+| `GET` | `/dashboard/api/logs/stream` | Real-time SSE log stream |
+
+---
+
+## 🖥 Dashboard / 管理后台
+
+Access at `http://localhost:3003/dashboard`
+
+| Panel | Description |
+| :--- | :--- |
+| **Overview** | Runtime stats, account pool health, success rate |
+| **Login** | Windsurf token/email login, OAuth |
+| **Accounts** | Add/remove, batch enable/disable, per-account proxy, quota display |
+| **Models** | Global allow/blocklist, per-account model restrictions |
+| **Proxy** | Global + per-account HTTP/SOCKS5 proxy |
+| **Logs** | Real-time SSE log stream with level filtering |
+| **Analytics** | Token/Credit charts, 14-day trends, 24h distribution, request details |
+| **Detection** | Error pattern monitoring, account health |
+| **Experimental** | Cascade session reuse, model identity masking, preflight rate-limit |
+
+### Screenshots / 界面预览
+
+<p align="center">
+  <b>Account Pool — Multi-account quota monitoring / 多账号额度监控</b><br/>
+  <img src="docs/screenshots/accounts.png" width="900" />
+</p>
+
+<p align="center">
+  <b>Analytics — Token & Credit usage charts / 统计分析面板</b><br/>
+  <img src="docs/screenshots/analytics.png" width="900" />
+</p>
+
+<p align="center">
+  <b>Model Stats — Per-model request breakdown / 模型使用统计</b><br/>
+  <img src="docs/screenshots/models.png" width="900" />
+</p>
+
+<p align="center">
+  <b>Experimental — Cascade reuse & model identity injection / 实验性功能</b><br/>
+  <img src="docs/screenshots/experimental.png" width="900" />
+</p>
+
+---
+
+## 🤖 Supported Models / 支持的模型
+
+<details>
+<summary><b>Claude (Anthropic)</b></summary>
+
+`claude-3.5-sonnet` · `claude-3.7-sonnet[-thinking]` · `claude-4-sonnet[-thinking]` · `claude-4-opus[-thinking]` ·
+`claude-4.1-opus[-thinking]` · `claude-4.5-sonnet[-thinking]` · `claude-4.5-haiku` · `claude-4.5-opus[-thinking]` ·
+`claude-sonnet-4.6[-thinking][-1m]` · `claude-opus-4.6[-thinking]` · `claude-opus-4.7-{low,medium,high,xhigh,max}`
+
+</details>
+
+<details>
+<summary><b>GPT (OpenAI)</b></summary>
+
+`gpt-4o` · `gpt-4o-mini` · `gpt-4.1[-mini/nano]` · `gpt-5[-mini]` · `gpt-5.2[-low/medium/high]` ·
+`gpt-5.4[-low/medium/high/xhigh]` · `gpt-5.3-codex` · `o3[-mini/high/pro]` · `o4-mini`
+
+</details>
+
+<details>
+<summary><b>Gemini (Google)</b></summary>
+
+`gemini-2.5-pro` · `gemini-2.5-flash` · `gemini-3.0-pro` · `gemini-3.0-flash` · `gemini-3.1-pro[-low/high]`
+
+</details>
+
+<details>
+<summary><b>Others / 其他</b></summary>
+
+`deepseek-v3` · `deepseek-r1` · `grok-3[-mini]` · `grok-code-fast-1` · `qwen-3` · `qwen-3-coder` ·
+`kimi-k2` · `kimi-k2.5` · `swe-1.5[-thinking]` · `swe-1.6-fast` · `arena-fast` · `arena-smart`
+
+</details>
+
+> Model catalog is auto-synced from Windsurf cloud on startup. Free accounts: `gpt-4o-mini` and `gemini-2.5-flash` only.
 >
-> Windsurf 官方存在 bug：通过邮箱/密码直接登录时，请求可能仍然路由到原来的账号，导致账号切换不生效。
->
-> **正确做法**：打开 Windsurf 编辑器，访问 [获取 Auth Token](https://windsurf.com/editor/show-auth-token?workflow=) 页面，复制 Token 后使用下面的 Token 方式添加账号。
-
-```bash
-# ✅ 用 Token 添加账号（强烈推荐）
-# 获取 Token：打开 Windsurf 编辑器 → 访问 https://windsurf.com/editor/show-auth-token?workflow=
-curl -X POST http://localhost:3003/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"token": "your-windsurf-token"}'
-
-# ⚠️ 用 API Key 添加（不推荐，可能存在路由 bug）
-curl -X POST http://localhost:3003/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"api_key": "sk-ws-..."}'
-
-# 批量添加（推荐用 Token）
-curl -X POST http://localhost:3003/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"accounts": [{"token": "t1"}, {"token": "t2"}]}'
-
-# 列出已添加账号
-curl http://localhost:3003/auth/accounts
-
-# 删除
-curl -X DELETE http://localhost:3003/auth/accounts/{id}
-```
-
-### Dashboard API（需 `X-Dashboard-Password` 头）
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| `GET`  | `/dashboard/api/stats` | 旧版统计快照（保留兼容） |
-| `DELETE` | `/dashboard/api/stats` | 重置所有统计 |
-| `GET`  | `/dashboard/api/usage` | **新：** CLIProxyAPI 格式完整使用统计 |
-| `GET`  | `/dashboard/api/usage/export` | **新：** 下载备份 JSON 文件 |
-| `POST` | `/dashboard/api/usage/import` | **新：** 导入备份（自动去重合并） |
-| `POST` | `/dashboard/api/usage/reset` | **新：** 重置使用数据 |
-| `DELETE` | `/dashboard/api/usage/details?days=30` | **新：** 裁剪明细（保留最近 N 天） |
-| `DELETE` | `/dashboard/api/usage/days?days=90` | **新：** 裁剪日统计桶 |
-| `GET`  | `/dashboard/api/logs` | 日志拉取 |
-| `GET`  | `/dashboard/api/logs/stream` | SSE 日志流 |
-| `GET`  | `/dashboard/api/experimental` | 实验功能开关 |
-| `PATCH` | `/dashboard/api/experimental` | 切换实验功能 |
-
-完整示例见 `examples/curl.sh`、`examples/python_client.py`、`examples/typescript_client.ts`。
-
-### 使用数据 Schema（`GET /dashboard/api/usage`）
-
-```json
-{
-  "usage": {
-    "total_requests": 29,
-    "success_count": 28,
-    "failure_count": 1,
-    "total_tokens": 33604,
-    "total_credits": 30,
-    "requests_by_day":  { "2026-04-19": 28, "2026-04-20": 1 },
-    "requests_by_hour": { "10": 5, "11": 24 },
-    "tokens_by_day":    { "2026-04-20": 33604 },
-    "tokens_by_hour":   { "11": 33604 },
-    "credits_by_day":   { "2026-04-20": 30 },
-    "credits_by_hour":  { "11": 30 },
-    "apis": {
-      "POST /v1/messages": {
-        "total_requests": 1,
-        "total_tokens": 33604,
-        "total_credits": 30,
-        "models": {
-          "claude-opus-4.7-max": {
-            "total_requests": 1,
-            "total_tokens": 33604,
-            "total_credits": 30,
-            "details": [
-              {
-                "timestamp": "2026-04-20T02:23:48.123Z",
-                "latency_ms": 5440,
-                "source": "POST /v1/messages",
-                "auth_index": "0000abcd",
-                "failed": false,
-                "credit": 30,
-                "tokens": {
-                  "input_tokens": 33598,
-                  "output_tokens": 6,
-                  "reasoning_tokens": 0,
-                  "cached_tokens": 0,
-                  "total_tokens": 33604
-                }
-              }
-            ]
-          }
-        }
-      }
-    }
-  }
-}
-```
+> 启动时自动从 Windsurf 云端拉取最新模型列表。免费账号仅可用 `gpt-4o-mini` 和 `gemini-2.5-flash`。
 
 ---
 
-## Dashboard 管理后台
+## 🚢 Deployment / 部署指南
 
-访问 `http://localhost:3003/dashboard`，9 个面板：
-
-| 面板 | 功能 |
-|---|---|
-| **总览** | 运行时间、账号池、LS 健康、请求成功率 |
-| **登录取号** | 从 Windsurf 邮箱/密码或扫码获取 token |
-| **账号管理** | 增删改/停用/重置错误计数/编辑标签/每账号代理 |
-| **模型控制** | 全局模型白/黑名单、按账号屏蔽模型 |
-| **代理配置** | 全局 + 每账号 HTTP / SOCKS5 代理 |
-| **日志** | 实时 SSE 日志流，级别筛选 |
-| **统计分析** | **新：** Token/Credit 图表、14 天走势、24 小时分布、请求明细表、导出/导入按钮 |
-| **封禁侦测** | 错误模式监控 + 账号健康 |
-| **实验功能** | Cascade 对话复用、模型身份伪装、Preflight rate-limit 等 |
-
----
-
-## 支持的模型（摘录）
-
-<details><summary><b>Claude</b></summary>
-
-`claude-3.5-sonnet` / `claude-3.7-sonnet[-thinking]` / `claude-4-sonnet[-thinking]` / `claude-4-opus[-thinking]` /
-`claude-4.1-opus[-thinking]` / `claude-4.5-sonnet[-thinking]` / `claude-4.5-haiku` / `claude-4.5-opus[-thinking]` /
-`claude-sonnet-4.6[-thinking]` / `claude-opus-4.6[-thinking]` / `claude-opus-4.7-max` 等
-
-</details>
-
-<details><summary><b>GPT / OpenAI</b></summary>
-
-`gpt-4o` / `gpt-4o-mini` / `gpt-4.1[-mini/nano]` / `gpt-5[-mini]` / `gpt-5.2[-low/medium/high]` /
-`gpt-5.4[-low/medium/high/xhigh]` / `gpt-5.3-codex` / `o3[-mini/high/pro]` / `o4-mini`
-
-</details>
-
-<details><summary><b>Gemini / Google</b></summary>
-
-`gemini-2.5-pro` / `gemini-2.5-flash` / `gemini-3.0-pro` / `gemini-3.0-flash` / `gemini-3.1-pro[-low/high]`
-
-</details>
-
-<details><summary><b>其他</b></summary>
-
-`deepseek-v3` / `deepseek-r1` / `grok-3[-mini]` / `grok-code-fast-1` / `qwen-3` / `qwen-3-coder` /
-`kimi-k2` / `kimi-k2.5` / `swe-1.5[-thinking]` / `swe-1.6-fast` / `arena-fast` / `arena-smart`
-
-</details>
-
-启动时会自动从 Windsurf 后端拉取 live catalog 并与本地硬编码列表合并，`GET /v1/models` 返回实时可用列表。
-
-免费账号仅可用 `gpt-4o-mini` 和 `gemini-2.5-flash`。Claude / GPT-5 等 premium 模型需要 Windsurf Pro 订阅。
-
----
-
-## 部署
-
-### PM2 常驻（推荐）
+### PM2 (Recommended / 推荐)
 
 ```bash
 npm install -g pm2
-pm2 start src/index.js --name windsurf-api --cwd /path/to/WindsurfAPI
-pm2 save
-pm2 startup
+pm2 start src/index.js --name windsurfpool --cwd /path/to/WindsurfPoolAPI
+pm2 save && pm2 startup
 ```
 
-> **重要：** 不要用 `pm2 restart windsurf-api`，某些 PM2/Node 组合会留下僵尸进程占住 3003 端口。正确做法：
->
-> ```bash
-> pm2 stop windsurf-api && pm2 delete windsurf-api
-> fuser -k 3003/tcp 2>/dev/null
-> sleep 2
-> pm2 start src/index.js --name windsurf-api --cwd /path/to/WindsurfAPI
-> ```
-
-### systemd（Linux 服务器推荐）
+### systemd (Linux)
 
 ```ini
-# /etc/systemd/system/windsurfapi.service
+# /etc/systemd/system/windsurfpool.service
 [Unit]
-Description=WindsurfAPI
+Description=WindsurfPoolAPI
 After=network.target
 
 [Service]
 Type=simple
 User=windsurf
-WorkingDirectory=/opt/WindsurfAPI
+WorkingDirectory=/opt/WindsurfPoolAPI
 ExecStart=/usr/bin/node src/index.js
 Restart=on-failure
 RestartSec=5
 Environment=PORT=3003
-Environment=LOG_LEVEL=info
 
 [Install]
 WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now windsurfapi
-sudo journalctl -u windsurfapi -f
+sudo systemctl enable --now windsurfpool
 ```
 
-### 防火墙
+### macOS (launchd)
 
 ```bash
-# Ubuntu (ufw)
+bash scripts/install-macos.sh
+```
+
+### Firewall / 防火墙
+
+```bash
+# Ubuntu
 sudo ufw allow 3003/tcp
 
-# CentOS (firewalld)
+# CentOS
 sudo firewall-cmd --add-port=3003/tcp --permanent && sudo firewall-cmd --reload
 ```
 
-云服务器记得在控制台安全组里开放 3003 端口。
+> Cloud servers: remember to open port 3003 in your security group.
+>
+> 云服务器记得在安全组中开放 3003 端口。
 
 ---
 
-## 架构
+## 🏗 Architecture / 架构
 
 ```text
-客户端 (OpenAI SDK / Anthropic SDK / curl / CC / Cursor)
+Client (OpenAI SDK / Anthropic SDK / curl / Cursor / Aider)
    │
    ▼
-WindsurfAPI  (Node.js HTTP, :3003)
-   │  ── /v1/chat/completions  (OpenAI 格式)
-   │  ── /v1/messages          (Anthropic 格式)
-   │  ── /dashboard/api/*      (管理 API)
+WindsurfPoolAPI  (Node.js HTTP, :3003)
+   ├── /v1/chat/completions    (OpenAI format)
+   ├── /v1/messages            (Anthropic format)
+   ├── /dashboard/api/*        (Admin API)
+   └── /dashboard              (Admin SPA)
+   │
    ▼
-Language Server  (gRPC-over-HTTP/2, :42100)
+Language Server Pool  (gRPC-over-HTTP/2, :42100+)
    │
    ▼
 Windsurf Cloud  (server.self-serve.windsurf.com)
 ```
 
-详细模块划分见 `ARCHITECTURE.md`。
-
-```text
-src/
-  index.js              入口：启动 LS + HTTP Server
-  server.js             HTTP 路由分发 + 流式
-  config.js             .env + 默认值
-  auth.js               账号池 / RPM 追踪 / credit 刷新
-  client.js             WindsurfClient：StartCascade / Send / 轮询 trajectory
-  windsurf.js           protobuf builder / parser（exa.language_server_pb）
-  proto.js              varint / length-prefixed 编解码
-  grpc.js               gRPC-over-HTTP2 unary 助手
-  langserver.js         LS 进程池（每个唯一代理一个 LS）
-  conversation-pool.js  Cascade 对话复用池（实验）
-  cache.js              内存响应缓存
-  sanitize.js           输出路径脱敏
-  runtime-config.js     实验功能开关持久化
-  models.js             模型 catalog + tier 访问表
-  handlers/
-    chat.js             /v1/chat/completions 处理
-    messages.js         /v1/messages 处理 (Anthropic → OpenAI 转换)
-    models.js           /v1/models
-    tool-emulation.js   <tool_call> prompt 协议
-  dashboard/
-    api.js              /dashboard/api/* 路由
-    index.html          单页 SPA
-    stats.js            v2 统计（CLIProxyAPI schema）
-    logger.js           日志环形缓冲 + SSE 流
-    proxy-config.js     代理持久化
-    model-access.js     模型黑/白名单
-    windsurf-login.js   直接邮箱+密码登录
-```
+See `ARCHITECTURE.md` for module-level details.
 
 ---
 
-## 常见问题
+## ❓ FAQ / 常见问题
 
-**Q: 启动时提示 `LS binary not found`？**
-A: 确认 `/opt/windsurf/language_server_linux_x64` 存在且可执行，或设置 `LS_BINARY_PATH` 环境变量指向正确位置。
+**Q: `LS binary not found` on startup?**
+A: Ensure the binary exists at `/opt/windsurf/language_server_linux_x64` (or set `LS_BINARY_PATH`).
 
-**Q: 请求一直返回 `No accounts available`？**
-A: Dashboard 添加至少一个账号，或通过 `POST /auth/login` API 加号。
+**Q: `No accounts available`?**
+A: Add at least one account via Dashboard or `POST /auth/login`.
 
-**Q: 所有账号报 `permission_denied`？**
-A: 免费账号只能用 `gpt-4o-mini` 和 `gemini-2.5-flash`。其他模型需要 Windsurf Pro 订阅。
+**Q: `permission_denied` for all accounts?**
+A: Free accounts only support `gpt-4o-mini` and `gemini-2.5-flash`. Other models require Windsurf Pro.
 
-**Q: 如何把旧的统计数据从一台机器迁移到另一台？**
-A: 旧机 `GET /dashboard/api/usage/export` → 下载 JSON；新机 `POST /dashboard/api/usage/import` 上传，自动去重合并。
+**Q: How to migrate stats between servers?**
+A: Export: `GET /dashboard/api/usage/export` → Import: `POST /dashboard/api/usage/import` (auto-dedup).
 
-**Q: Cascade 对话复用要不要开？**
-A: 如果主要用 重度工具调用客户端，开了效果不大（`emulateTools` 模式绕过复用）。如果是纯聊天多轮场景，开了能省一点延迟。
-
-**Q: 模型列表怎么更新？**
-A: 启动时自动从 Windsurf 后端拉取最新 catalog 并与本地合并。如需手动刷新，重启服务即可。
+**Q: How to update models?**
+A: Models auto-sync on startup. Restart the service to refresh.
 
 ---
 
-## 贡献
+## 🤝 Contributing
 
-见 `CONTRIBUTING.md`。欢迎提 Issue 和 PR。
+See `CONTRIBUTING.md`. Issues and PRs are welcome.
 
 ---
 
-## 致谢
+## 🙏 Acknowledgements / 致谢
+
+This project is built upon [dwgx/WindsurfAPI](https://github.com/dwgx/WindsurfAPI). Special thanks to [@dwgx](https://github.com/dwgx) for the foundational work and open-source contribution.
 
 本项目基于 [dwgx/WindsurfAPI](https://github.com/dwgx/WindsurfAPI) 的初始版本开发，感谢原作者 [@dwgx](https://github.com/dwgx) 的开创性工作和开源贡献。
 
 ---
 
-## 许可
+## 📄 License
 
 [MIT](LICENSE)

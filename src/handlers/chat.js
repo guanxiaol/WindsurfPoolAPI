@@ -586,7 +586,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
 
       // Streaming path sanitizers. Every text/thinking delta flows through a
       // PathSanitizeStream before leaving the server so /tmp/windsurf-workspace,
-      // /opt/windsurf and /root/WindsurfAPI literals can never slip out even
+      // /opt/windsurf and /root/WindsurfPoolAPI literals can never slip out even
       // if a path straddles a chunk boundary. See src/sanitize.js.
       const pathStreamText = new PathSanitizeStream();
       const pathStreamThinking = new PathSanitizeStream();

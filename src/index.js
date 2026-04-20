@@ -7,7 +7,7 @@ import { config, log } from './config.js';
 import { existsSync, mkdirSync, rmSync, readdirSync } from 'fs';
 import { resolve as pathResolve } from 'path';
 
-export const BRAND = 'WindsurfAPI bydwgx1337';
+export const BRAND = 'WindsurfPoolAPI';
 export const VERSION = '2.0.1';
 
 async function main() {

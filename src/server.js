@@ -37,7 +37,7 @@ function readBody(req) {
 
 function extractToken(req) {
   // Support both OpenAI-style `Authorization: Bearer <key>` and Anthropic-style
-  // `x-api-key: <key>` header. Anthropic clients send the latter when ANTHROPIC_BASE_URL
+  // `x-api-key: <key>` header. Claude Code sends the latter when ANTHROPIC_BASE_URL
   // is set, so /v1/messages MUST accept it for the drop-in UX to work.
   const xApiKey = req.headers['x-api-key'];
   if (xApiKey && typeof xApiKey === 'string') return xApiKey;
@@ -65,7 +65,7 @@ async function route(req, res) {
     const counts = getAccountCount();
     return json(res, 200, {
       status: 'ok',
-      provider: 'WindsurfAPI bydwgx1337',
+      provider: 'WindsurfPoolAPI',
       version: '2.0.1',
       uptime: Math.round(process.uptime()),
       accounts: counts,
@@ -203,7 +203,7 @@ async function route(req, res) {
     return;
   }
 
-  // Anthropic Messages API — /v1/messages. Lets Anthropic clients and any Anthropic
+  // Anthropic Messages API — /v1/messages. Lets Claude Code and any Anthropic
   // SDK point ANTHROPIC_BASE_URL at us directly, no protocol translator required.
   if (path === '/v1/messages' && method === 'POST') {
     if (!isAuthenticated()) {
@@ -265,7 +265,7 @@ export function startServer() {
   server.listen({ port: config.port, host: '0.0.0.0' }, () => {
     log.info(`Server on http://0.0.0.0:${config.port}`);
     log.info('  POST /v1/chat/completions  (OpenAI format)');
-    log.info('  POST /v1/messages          (Anthropic format — Anthropic clients native)');
+    log.info('  POST /v1/messages          (Anthropic format — Claude Code native)');
     log.info('  GET  /v1/models');
     log.info('  POST /auth/login           (add account)');
     log.info('  GET  /auth/accounts        (list accounts)');

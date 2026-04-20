@@ -28,14 +28,14 @@
 const PATTERNS = [
   [/\/tmp\/windsurf-workspace(\/[^\s"'`<>)}\],*;]*)?/g, '.$1'],
   [/\/opt\/windsurf(?:\/[^\s"'`<>)}\],*;]*)?/g, '[internal]'],
-  [/\/root\/WindsurfAPI(?:\/[^\s"'`<>)}\],*;]*)?/g, '[internal]'],
+  [/\/root\/WindsurfPoolAPI(?:\/[^\s"'`<>)}\],*;]*)?/g, '[internal]'],
 ];
 
 // Bare literals (no path tail) used by the streaming cut-point finder.
 const SENSITIVE_LITERALS = [
   '/tmp/windsurf-workspace',
   '/opt/windsurf',
-  '/root/WindsurfAPI',
+  '/root/WindsurfPoolAPI',
 ];
 
 // Character class that counts as part of a path body. Mirrors the PATTERNS
