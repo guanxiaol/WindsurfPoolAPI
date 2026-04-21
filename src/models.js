@@ -210,6 +210,15 @@ const ANTHROPIC_DATED = {
   'claude-sonnet-4-5-20250929': 'claude-4.5-sonnet',
   'claude-opus-4-5':            'claude-4.5-opus',
   'claude-opus-4-5-20251101':   'claude-4.5-opus',
+
+  // Anthropic Opus 4.7 — Windsurf currently only exposes `claude-opus-4-7-medium`
+  // via GetCascadeModelConfigs (mergeCloudModels adds it at runtime). Clients like
+  // Claude Code send the bare `claude-opus-4-7`, so resolve every common spelling
+  // to the -medium variant until Windsurf ships other reasoning levels.
+  'claude-opus-4-7':            'claude-opus-4-7-medium',
+  'claude-opus-4-7-latest':     'claude-opus-4-7-medium',
+  'claude-opus-4.7':            'claude-opus-4-7-medium',
+  'claude-opus-4.7-thinking':   'claude-opus-4-7-medium',
 };
 for (const [k, v] of Object.entries(ANTHROPIC_DATED)) _lookup.set(k, v);
 
