@@ -213,15 +213,10 @@ export class WindsurfClient {
         log.warn(`Panel state missing, re-warming LS port=${this.port}`);
         await this.warmupCascade(true).catch(() => {});
         sessionId = getLsEntryByPort(this.port)?.sessionId || randomUUID();
-        if (reuseEntry) reuseEntry.cascadeId = null; // force StartCascade
+        reuseEntry = null; // cascade expired — treat as fresh
         cascadeId = await openCascade();
       }
 
-      // Build the text payload:
-      //   - Resuming (reuseEntry): server already has prior turns cached,
-      //     only send the newest user message. This preserves native Cascade
-      //     context which is far better than a text-blob re-pack.
-      //   - Fresh: pack entire history into XML-tagged transcript.
       let text;
       let images = [];
       const systemMsgs = messages.filter(m => m.role === 'system');
@@ -263,6 +258,21 @@ export class WindsurfClient {
       } catch (e) {
         if (!isPanelMissing(e)) throw e;
         log.warn(`Panel state missing on Send, re-warming + restarting cascade port=${this.port}`);
+        // Cascade expired — fall back to fresh with FULL history.
+        // text was built as resume-only (last message). Rebuild it.
+        if (isResume && convo.length > 1) {
+          const lines = [];
+          for (let i = 0; i < convo.length - 1; i++) {
+            const m = convo[i];
+            const tag = m.role === 'user' ? 'human' : 'assistant';
+            lines.push(`<${tag}>\n${contentToString(m.content)}\n</${tag}>`);
+          }
+          const latest = convo[convo.length - 1];
+          const extracted = await extractImages(latest?.content ?? '');
+          text = `The following is a multi-turn conversation. You MUST remember and use all information from prior turns.\n\n${lines.join('\n\n')}\n\n<human>\n${extracted.text}\n</human>`;
+          if (sysText) text = sysText + '\n\n' + text;
+          log.info('Cascade: rebuilt full history after resume failure');
+        }
         await this.warmupCascade(true).catch(() => {});
         sessionId = getLsEntryByPort(this.port)?.sessionId || randomUUID();
         const startProto = buildStartCascadeRequest(this.apiKey, sessionId);
