@@ -217,34 +217,25 @@ export class WindsurfClient {
         cascadeId = await openCascade();
       }
 
-      // Build the text payload. Two cases:
-      //   - Resuming an existing cascade: the backend already has the prior
-      //     turns cached, so we only send the newest user message.
-      //   - Fresh cascade: we have to pack the entire history into one shot
-      //     (Cascade doesn't accept a messages array). System blocks go on
-      //     top, then we render u/a turns as a labeled transcript so the
-      //     model can see its own prior replies — previously we dropped
-      //     assistant turns entirely and multi-turn context was broken.
-      //
-      // The caller (handlers/chat.js) is responsible for any tool-protocol
-      // preamble that needs to sit in front of the user text (client-defined
-      // OpenAI tools are serialized into a '<tool_call>{...}</tool_call>'
-      // emission contract there). This function just stitches system + u/a
-      // turns into the single text payload Cascade accepts.
-      // Always pack full history — Cascade server does NOT reliably keep
-      // per-cascade context across turns, so even reuse mode must send the
-      // complete conversation. Reuse only saves the StartCascade RPC. (#24)
+      // Build the text payload:
+      //   - Resuming (reuseEntry): server already has prior turns cached,
+      //     only send the newest user message. This preserves native Cascade
+      //     context which is far better than a text-blob re-pack.
+      //   - Fresh: pack entire history into XML-tagged transcript.
       let text;
       let images = [];
       const systemMsgs = messages.filter(m => m.role === 'system');
       const convo = messages.filter(m => m.role === 'user' || m.role === 'assistant');
       const sysText = systemMsgs.map(m => contentToString(m.content)).join('\n').trim();
 
-      if (convo.length <= 1) {
+      const isResume = !!reuseEntry;
+
+      if (isResume || convo.length <= 1) {
         const last = convo[convo.length - 1];
         const extracted = await extractImages(last?.content ?? '');
         text = extracted.text;
         images = extracted.images;
+        if (!isResume && sysText) text = sysText + '\n\n' + text;
       } else {
         const lines = [];
         for (let i = 0; i < convo.length - 1; i++) {
@@ -256,8 +247,8 @@ export class WindsurfClient {
         const extracted = await extractImages(latest?.content ?? '');
         text = `The following is a multi-turn conversation. You MUST remember and use all information from prior turns.\n\n${lines.join('\n\n')}\n\n<human>\n${extracted.text}\n</human>`;
         images = extracted.images;
+        if (sysText) text = sysText + '\n\n' + text;
       }
-      if (sysText) text = sysText + '\n\n' + text;
       if (images.length) log.info(`Cascade: attaching ${images.length} image(s) to field 6`);
 
       // Step 2: Send message (retry once on panel-state-not-found)

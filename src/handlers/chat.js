@@ -257,7 +257,7 @@ export async function handleChatCompletions(body) {
   // instead of replaying the whole history.
   //
   // Conversation reuse lets Cascade keep server-side context across turns.
-  const reuseEnabled = useCascade && !emulateTools && isExperimentalEnabled('cascadeConversationReuse');
+  const reuseEnabled = useCascade && isExperimentalEnabled('cascadeConversationReuse');
   const fpBefore = reuseEnabled ? fingerprintBefore(messages, modelKey) : null;
   let reuseEntry = reuseEnabled ? poolCheckout(fpBefore) : null;
   if (reuseEntry) log.info(`Chat: cascade reuse HIT cascadeId=${reuseEntry.cascadeId.slice(0, 8)}… model=${displayModel}`);
@@ -586,7 +586,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
       // Cascade conversation pool (experimental, stream path) — bypassed in
       // tool-emulation mode because the fingerprint can't collapse turns
       // whose bodies carry <tool_call>/<tool_result> markup.
-      const reuseEnabled = useCascade && !emulateTools && isExperimentalEnabled('cascadeConversationReuse');
+      const reuseEnabled = useCascade && isExperimentalEnabled('cascadeConversationReuse');
       const fpBefore = reuseEnabled ? fingerprintBefore(messages, modelKey) : null;
       let reuseEntry = reuseEnabled ? poolCheckout(fpBefore) : null;
       if (reuseEntry) log.info(`Chat: cascade reuse HIT cascadeId=${reuseEntry.cascadeId.slice(0, 8)}… stream model=${model}`);
