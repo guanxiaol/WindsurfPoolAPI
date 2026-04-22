@@ -134,9 +134,6 @@ export async function ensureLs(proxy = null) {
       `--register_user_url=https://api.codeium.com/register_user/`,
       `--codeium_dir=${dataDir}`,
       `--database_dir=${dataDir}/db`,
-      '--enable_local_search=false',
-      '--enable_index_service=false',
-      '--enable_lsp=false',
       '--detect_proxy=false',
     ];
 

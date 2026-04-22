@@ -76,7 +76,7 @@ function postJson(host, path, body, proxy) {
         'Content-Length': Buffer.byteLength(postData),
         'Connect-Protocol-Version': '1',
         'Accept': 'application/json',
-        'User-Agent': 'windsurf/1.108.2',
+        'User-Agent': 'windsurf/1.9600.41',
       },
     };
     const onRes = (res) => {
@@ -128,9 +128,9 @@ export async function getUserStatus(apiKey, proxy = null) {
     metadata: {
       apiKey,
       ideName: 'windsurf',
-      ideVersion: '1.108.2',
+      ideVersion: '1.9600.41',
       extensionName: 'windsurf',
-      extensionVersion: '1.108.2',
+      extensionVersion: '1.9600.41',
       locale: 'en',
     },
   };
@@ -216,9 +216,9 @@ function buildMetadata(apiKey) {
   return {
     apiKey,
     ideName: 'windsurf',
-    ideVersion: '1.108.2',
+    ideVersion: '1.9600.41',
     extensionName: 'windsurf',
-    extensionVersion: '1.108.2',
+    extensionVersion: '1.9600.41',
     locale: 'en',
   };
 }

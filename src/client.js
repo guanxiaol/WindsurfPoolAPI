@@ -130,8 +130,9 @@ export class WindsurfClient {
     if (lsEntry.workspaceInit) return lsEntry.workspaceInit;
 
     const sessionId = lsEntry.sessionId;
-    const workspacePath = '/tmp/windsurf-workspace';
-    const workspaceUri = 'file:///tmp/windsurf-workspace';
+    const wsId = this.apiKey.slice(0, 8).replace(/[^a-z0-9]/gi, 'x');
+    const workspacePath = `/home/user/projects/workspace-${wsId}`;
+    const workspaceUri = `file://${workspacePath}`;
 
     lsEntry.workspaceInit = (async () => {
       try {

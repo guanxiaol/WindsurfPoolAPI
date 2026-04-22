@@ -86,15 +86,19 @@ function encodeTimestamp() {
 
 // ─── Metadata ──────────────────────────────────────────────
 
+import { platform, arch } from 'os';
+const _os = platform() === 'darwin' ? 'macos' : platform() === 'win32' ? 'windows' : 'linux';
+const _hw = arch() === 'arm64' ? 'arm64' : 'x86_64';
+
 export function buildMetadata(apiKey, version = '1.9600.41', sessionId = null) {
   return Buffer.concat([
     writeStringField(1, 'windsurf'),          // ide_name
     writeStringField(2, version),             // extension_version
     writeStringField(3, apiKey),              // api_key
     writeStringField(4, 'en'),                // locale
-    writeStringField(5, 'linux'),             // os
+    writeStringField(5, _os),                 // os
     writeStringField(7, version),             // ide_version
-    writeStringField(8, 'x86_64'),            // hardware
+    writeStringField(8, _hw),                 // hardware
     writeVarintField(9, Math.floor(Math.random() * 2**48)),  // request_id
     writeStringField(10, sessionId || randomUUID()), // session_id
     writeStringField(12, 'windsurf'),          // extension_name
