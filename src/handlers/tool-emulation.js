@@ -227,7 +227,25 @@ export class ToolCallStreamParser {
     this.buffer = '';
     this.inToolCall = false;
     this.inToolResult = false;
+    this.inToolCode = false;
     this._totalSeen = 0;
+  }
+
+  _parseToolCodeJson(jsonStr) {
+    const parsed = safeParseJson(jsonStr);
+    if (!parsed || typeof parsed.tool_code !== 'string') return null;
+    const m = parsed.tool_code.match(/^([^(]+)\(([^]*)\)$/);
+    if (!m) return null;
+    const name = m[1].trim();
+    let args = m[2].trim();
+    if (args.startsWith('"') && args.endsWith('"')) args = `{"input":${args}}`;
+    else if (!args.startsWith('{')) args = args ? `{"input":"${args}"}` : '{}';
+    const parsedArgs = safeParseJson(args) || { input: args };
+    return {
+      id: `call_tc_${this._totalSeen}_${Date.now().toString(36)}`,
+      name,
+      argumentsJson: JSON.stringify(parsedArgs),
+    };
   }
 
   feed(delta) {
@@ -239,6 +257,7 @@ export class ToolCallStreamParser {
     const TC_CLOSE = '</tool_call>';
     const TR_PREFIX = '<tool_result';
     const TR_CLOSE = '</tool_result>';
+    const TC_CODE = '{"tool_code"';
 
     while (true) {
       // ── Inside a <tool_result …>…</tool_result> block — discard body ──
@@ -269,8 +288,36 @@ export class ToolCallStreamParser {
           });
           this._totalSeen++;
         } else {
-          // Malformed — surface as literal text so it's debuggable
           safeParts.push(`<tool_call>${body}</tool_call>`);
+        }
+        continue;
+      }
+
+      // ── Inside a {"tool_code": "…"} block — find closing brace ──
+      if (this.inToolCode) {
+        let depth = 0;
+        let inStr = false;
+        let escaped = false;
+        let endIdx = -1;
+        for (let i = 0; i < this.buffer.length; i++) {
+          const ch = this.buffer[i];
+          if (escaped) { escaped = false; continue; }
+          if (ch === '\\' && inStr) { escaped = true; continue; }
+          if (ch === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (ch === '{') depth++;
+          if (ch === '}') { depth--; if (depth === 0) { endIdx = i; break; } }
+        }
+        if (endIdx === -1) break;
+        const jsonStr = this.buffer.slice(0, endIdx + 1);
+        this.buffer = this.buffer.slice(endIdx + 1);
+        this.inToolCode = false;
+        const tc = this._parseToolCodeJson(jsonStr);
+        if (tc) {
+          doneCalls.push(tc);
+          this._totalSeen++;
+        } else {
+          safeParts.push(jsonStr);
         }
         continue;
       }
@@ -278,23 +325,23 @@ export class ToolCallStreamParser {
       // ── Normal mode — scan for the next opening tag ──
       const tcIdx = this.buffer.indexOf(TC_OPEN);
       const trIdx = this.buffer.indexOf(TR_PREFIX);
+      const tcCodeIdx = this.buffer.indexOf(TC_CODE);
 
-      // Pick whichever opening tag comes first
       let nextIdx = -1;
-      let isResult = false;
-      if (tcIdx !== -1 && (trIdx === -1 || tcIdx <= trIdx)) {
-        nextIdx = tcIdx;
-      } else if (trIdx !== -1) {
-        nextIdx = trIdx;
-        isResult = true;
+      let tagType = null;
+      const candidates = [];
+      if (tcIdx !== -1) candidates.push({ idx: tcIdx, type: 'tc' });
+      if (trIdx !== -1) candidates.push({ idx: trIdx, type: 'tr' });
+      if (tcCodeIdx !== -1) candidates.push({ idx: tcCodeIdx, type: 'code' });
+      if (candidates.length) {
+        candidates.sort((a, b) => a.idx - b.idx);
+        nextIdx = candidates[0].idx;
+        tagType = candidates[0].type;
       }
 
       if (nextIdx === -1) {
-        // No tags found. Hold back any suffix that could be a partial
-        // prefix of either opening tag so we don't leak mid-tag to the
-        // client.
         let holdLen = 0;
-        for (const prefix of [TC_OPEN, TR_PREFIX]) {
+        for (const prefix of [TC_OPEN, TR_PREFIX, TC_CODE]) {
           const maxHold = Math.min(prefix.length - 1, this.buffer.length);
           for (let len = maxHold; len > 0; len--) {
             if (this.buffer.endsWith(prefix.slice(0, len))) {
@@ -309,30 +356,28 @@ export class ToolCallStreamParser {
         break;
       }
 
-      // Emit text before the tag
       if (nextIdx > 0) safeParts.push(this.buffer.slice(0, nextIdx));
 
-      if (!isResult) {
-        // <tool_call>
+      if (tagType === 'tc') {
         this.buffer = this.buffer.slice(nextIdx + TC_OPEN.length);
         this.inToolCall = true;
-      } else {
-        // <tool_result …> — may have attributes, find closing >
+      } else if (tagType === 'tr') {
         const closeAngle = this.buffer.indexOf('>', nextIdx + TR_PREFIX.length);
         if (closeAngle === -1) {
-          // Incomplete open tag; hold everything from the tag start
           this.buffer = this.buffer.slice(nextIdx);
           break;
         }
         this.buffer = this.buffer.slice(closeAngle + 1);
         this.inToolResult = true;
+      } else if (tagType === 'code') {
+        this.buffer = this.buffer.slice(nextIdx);
+        this.inToolCode = true;
       }
     }
 
     return { text: safeParts.join(''), toolCalls: doneCalls };
   }
 
-  /** Call at end of stream. Returns any leftover buffer as literal text. */
   flush() {
     const remaining = this.buffer;
     this.buffer = '';
@@ -344,9 +389,13 @@ export class ToolCallStreamParser {
       this.inToolResult = false;
       return { text: '', toolCalls: [] };
     }
-    // Fallback: detect Cascade-native tool_code format that some models emit
-    // instead of our <tool_call> XML. Parse {"tool_code": "funcname(args)"} or
-    // {"tool_code": "funcname(\"arg\")"} into a standard tool call.
+    if (this.inToolCode) {
+      this.inToolCode = false;
+      const tc = this._parseToolCodeJson(remaining);
+      if (tc) { this._totalSeen++; return { text: '', toolCalls: [tc] }; }
+      return { text: remaining, toolCalls: [] };
+    }
+    // Fallback: detect any remaining tool_code patterns in leftover buffer
     const toolCalls = [];
     const cleaned = remaining.replace(/\{"tool_code"\s*:\s*"([^"]+?)\(([^]*?)\)"\s*\}/g, (_match, name, rawArgs) => {
       try {
