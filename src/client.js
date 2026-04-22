@@ -491,8 +491,8 @@ export class WindsurfClient {
           idleCount++;
           // Require at least a little text OR a long idle streak before
           // accepting "done", so we don't race the first visible chunk.
-          const growthSettled = (Date.now() - lastGrowthAt) > pollInterval * 3;
-          const canBreak = sawText ? (idleCount >= 3 && growthSettled) : idleCount >= 4;
+          const growthSettled = (Date.now() - lastGrowthAt) > pollInterval * 2;
+          const canBreak = sawText ? (idleCount >= 2 && growthSettled) : idleCount >= 4;
           if (canBreak) {
             // Final sweep
             const finalResp = await grpcUnary(
