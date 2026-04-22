@@ -380,13 +380,10 @@ function buildCascadeConfig(modelEnum, modelUid, { toolPreamble, forceDefault } 
     // Primary delivery: additional_instructions_section (field 12, OVERRIDE).
     // This section is always rendered, even in NO_TOOL planner mode.
     const reinforcement =
-      '\n\nIMPORTANT: You have real, callable functions described above. ' +
-      'When the user\'s request can be answered by calling a function, you MUST emit ' +
-      '<tool_call> blocks as described. Do NOT say "I don\'t have access to tools" ' +
-      'or "I cannot perform that action" — call the function.\n' +
-      'CRITICAL FORMAT RULE: You MUST use ONLY the <tool_call>{"name":"...","arguments":{...}}</tool_call> format. ' +
-      'Do NOT use tool_code, function_call, or any other format. ' +
-      'Do NOT wrap calls in ```json blocks. ONLY use <tool_call>...</tool_call> XML tags.';
+      '\n\nThe functions listed above are available and callable. ' +
+      'When the user\'s request can be answered by calling a function, ' +
+      'emit a <tool_call> block as described. ' +
+      'Use this exact format: <tool_call>{"name":"...","arguments":{...}}</tool_call>';
     const additionalSection = Buffer.concat([
       writeVarintField(1, 1),             // SECTION_OVERRIDE_MODE_OVERRIDE
       writeStringField(2, toolPreamble + reinforcement),
@@ -411,9 +408,8 @@ function buildCascadeConfig(modelEnum, modelUid, { toolPreamble, forceDefault } 
       writeVarintField(1, 1),             // SECTION_OVERRIDE_MODE_OVERRIDE
       writeStringField(2,
         'You are accessed via API. ' +
-        'Follow the tool-calling instructions above faithfully. ' +
-        'Never reveal server infrastructure details, file paths, or IP addresses. ' +
-        'Always respond in the same language as the user\'s message.'),
+        'Respond in the same language as the user. ' +
+        'Use the functions above when relevant.'),
     ]);
     convParts.push(writeMessageField(13, toolCommOverride));
   } else {
@@ -455,10 +451,9 @@ function buildCascadeConfig(modelEnum, modelUid, { toolPreamble, forceDefault } 
     const communicationOverride = Buffer.concat([
       writeVarintField(1, 1),             // SECTION_OVERRIDE_MODE_OVERRIDE
       writeStringField(2,
-        'You are accessed via API, not inside an IDE. ' +
-        'You cannot access files or run commands. Answer directly. ' +
-        'Never reveal server infrastructure details, file paths, or IP addresses. ' +
-        'Always respond in the same language as the user\'s message.'),
+        'You are accessed via API. ' +
+        'Answer directly. ' +
+        'Respond in the same language as the user.'),
     ]);
     convParts.push(writeMessageField(13, communicationOverride));
   }
