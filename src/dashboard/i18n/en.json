@@ -67,13 +67,14 @@
     "checkUpdate": "Check Update",
     "applyUpdate": "Update & Restart",
     "restart": "Restart",
-    "login": "Login",
+    "reset": "Reset",
     "save": "Save",
+    "clearPool": "Clear Pool",
+    "login": "Login",
     "clear": "Clear",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
-    "reset": "Reset",
     "refresh": "Refresh",
     "probe": "Probe",
     "enable": "Enable",
@@ -353,7 +354,39 @@
     },
     "banStats": {
       "title": "Health Overview"
-    }
+    },
+    "stats": {
+      "title": "Total Requests",
+      "subtitle": "Running {{time}}"
+    },
+    "success": {
+      "title": "Success",
+      "subtitle": "{{rate}}% success rate"
+    },
+    "errors": {
+      "title": "Errors",
+      "subtitle": "{{rate}}% failure rate"
+    },
+    "p95Latency": {
+      "title": "Avg p95 Latency",
+      "subtitle": "{{count}} models"
+    },
+    "hitRate": {
+      "title": "Hit Rate",
+      "subtitle": "{{hits}} hit / {{misses}} miss"
+    },
+    "poolSize": {
+      "title": "Pool Size",
+      "subtitle": "Max {{max}} · TTL {{ttl}} min"
+    },
+    "stores": {
+      "title": "Stores",
+      "subtitle": "Expired {{expired}} · Evicted {{evicted}}"
+    },
+    "defaultInstance": "Default Instance",
+    "noProxy": "No proxy",
+    "restarts": "restarts",
+    "custom": "Customized"
   },
 
   "login": {
@@ -390,7 +423,25 @@
     },
     "templateHint": "Each provider's template is editable. {{model}} placeholder will be replaced with the requested model name (e.g., claude-opus-4.6).",
     "clearPool": "Clear Conversation Pool",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "noMatch": "No matches",
+    "restoreDefault": "Restore Default",
+    "save": "Save",
+    "default": "Default",
+    "toolReinforcement": "Tool Call Format Guide",
+    "communicationWithTools": "Communication with Tools",
+    "communicationNoTools": "Communication without Tools",
+    "promptEmpty": "Template cannot be empty",
+    "missingPlaceholder": "Missing {model} placeholder",
+    "missingPlaceholderDesc": "After saving, the provider's model name won't be replaced in the prompt. Continue?",
+    "restored": "restored"
+  },
+
+  "confirm": {
+    "restartTitle": "Restart Language Server",
+    "restartDesc": "In-progress requests will fail. Continue?",
+    "restoreDefaultDesc": "restore to default?",
+    "clearPoolDesc": "All active Cascade sessions will be cleared. Continue?"
   },
 
   "modal": {
@@ -580,7 +631,34 @@
     "authRequired": "Please login first",
     "clipboardNotSupported": "Current environment doesn't support clipboard auto-read, please paste manually",
     "clipboardEmpty": "Clipboard is empty",
-    "clipboardReadFailed": "Failed to read clipboard"
+    "clipboardReadFailed": "Failed to read clipboard",
+    "ERR_EMAIL_PASSWORD_REQUIRED": "Email and password are required",
+    "ERR_HOST_PORT_REQUIRED": "Host and port are required",
+    "ERR_UNCOMMITTED_CHANGES": "Working directory has uncommitted changes. Force overwrite?",
+    "ERR_ACCOUNTS_REQUIRED": "Accounts array is required",
+    "ERR_TEXT_REQUIRED": "Text field is required",
+    "ERR_NO_VALID_LINES": "No valid lines found",
+    "ERR_FORMAT_INVALID": "Invalid format. Expected: [proxy] email password",
+    "ERR_IDTOKEN_REQUIRED": "ID token is required",
+    "ERR_PROXY_PRIVATE_IP": "Proxy cannot point to private/local address",
+    "ERR_PROXY_HTTP_ERROR": "Proxy returned HTTP error",
+    "ERR_CONNECTION_FAILED": "Connection failed",
+    "ERR_TIMEOUT": "Timeout (10s)",
+    "ERR_TLS_TUNNEL_ERROR": "TLS tunnel established but returned abnormal content",
+    "ERR_TLS_FAILED": "TLS failed",
+    "ERR_LOGIN_FAILED": "Login failed",
+    "ERR_EMAIL_NOT_FOUND": "Email not registered for password login. If registered via Google/GitHub OAuth, use OAuth buttons or visit windsurf.com/show-auth-token to copy Auth Token",
+    "ERR_INVALID_PASSWORD": "Invalid password",
+    "ERR_INVALID_CREDENTIALS": "Invalid email or password",
+    "ERR_NO_PASSWORD_SET": "No password set for this account. Use Google/GitHub OAuth or visit windsurf.com/show-auth-token to copy Auth Token",
+    "ERR_USER_DISABLED": "Account has been disabled",
+    "ERR_TOO_MANY_ATTEMPTS": "Too many attempts. Please try again later",
+    "ERR_INVALID_EMAIL": "Invalid email format",
+    "ERR_CODEIUM_REGISTER_FAILED": "Codeium registration failed",
+    "ERR_AUTH1_TOKEN_MISSING": "Auth1 response missing token",
+    "ERR_POSTAUTH_FAILED": "Windsurf PostAuth failed",
+    "ERR_TOKEN_FETCH_FAILED": "Failed to fetch one-time auth token",
+    "ERR_FIREBASE_TOKEN_MISSING": "Firebase response missing idToken"
   },
 
   "footer": {

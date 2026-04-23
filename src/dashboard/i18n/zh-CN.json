@@ -74,6 +74,7 @@
     "confirm": "确认",
     "delete": "删除",
     "reset": "重置",
+    "clearPool": "清空对话池",
     "refresh": "刷新",
     "probe": "探测",
     "enable": "启用",
@@ -372,7 +373,39 @@
     },
     "banStats": {
       "title": "健康概览"
-    }
+    },
+    "stats": {
+      "title": "总请求",
+      "subtitle": "运行 {{time}}"
+    },
+    "success": {
+      "title": "成功",
+      "subtitle": "成功率 {{rate}}%"
+    },
+    "errors": {
+      "title": "错误",
+      "subtitle": "失败率 {{rate}}%"
+    },
+    "p95Latency": {
+      "title": "平均 p95 延迟",
+      "subtitle": "{{count}} 个模型"
+    },
+    "hitRate": {
+      "title": "命中率",
+      "subtitle": "{{hits}} 命中 / {{misses}} 未命中"
+    },
+    "poolSize": {
+      "title": "对话池",
+      "subtitle": "上限 {{max}} · TTL {{ttl}} 分钟"
+    },
+    "stores": {
+      "title": "存储次数",
+      "subtitle": "过期 {{expired}} · 淘汰 {{evicted}}"
+    },
+    "defaultInstance": "默认实例",
+    "noProxy": "无代理",
+    "restarts": "重启",
+    "custom": "已自定义"
   },
 
   "login": {
@@ -409,7 +442,25 @@
     },
     "templateHint": "每个厂商的模板可编辑，{{model}} 占位符会被替换成请求的模型名（例如 claude-opus-4.6）。",
     "clearPool": "清空对话池",
-    "refresh": "刷新"
+    "refresh": "刷新",
+    "noMatch": "无匹配",
+    "restoreDefault": "恢复默认",
+    "save": "保存",
+    "default": "默认",
+    "toolReinforcement": "工具调用格式指引",
+    "communicationWithTools": "有工具时的通信指令",
+    "communicationNoTools": "无工具时的通信指令",
+    "promptEmpty": "模板不能为空",
+    "missingPlaceholder": "缺少 {model} 占位符",
+    "missingPlaceholderDesc": "保存后该厂商的模型名将无法被替换进提示词。确定继续？",
+    "restored": "已恢复"
+  },
+
+  "confirm": {
+    "restartTitle": "重启 Language Server",
+    "restartDesc": "进行中的请求将会失败，确定要继续吗？",
+    "restoreDefaultDesc": "恢复到默认？",
+    "clearPoolDesc": "当前所有进行中的 Cascade 会话都将被清除，确定继续吗？"
   },
 
   "modal": {
@@ -599,7 +650,34 @@
     "authRequired": "请先登录",
     "clipboardNotSupported": "当前环境不支持自动读取剪贴板，请手动粘贴",
     "clipboardEmpty": "剪贴板为空",
-    "clipboardReadFailed": "读取剪贴板失败"
+    "clipboardReadFailed": "读取剪贴板失败",
+    "ERR_EMAIL_PASSWORD_REQUIRED": "email 和 password 为必填",
+    "ERR_HOST_PORT_REQUIRED": "缺少 host 或 port",
+    "ERR_UNCOMMITTED_CHANGES": "工作区有未提交的修改（SFTP 部署或手动改过代码）。确定要覆盖本地修改用远程最新版本吗？",
+    "ERR_ACCOUNTS_REQUIRED": "accounts 为必填数组",
+    "ERR_TEXT_REQUIRED": "缺少 text 字段",
+    "ERR_NO_VALID_LINES": "没有有效行",
+    "ERR_FORMAT_INVALID": "格式错误 需要 [proxy] email password",
+    "ERR_IDTOKEN_REQUIRED": "缺少 idToken",
+    "ERR_PROXY_PRIVATE_IP": "代理地址不能指向内网/本机",
+    "ERR_PROXY_HTTP_ERROR": "代理返回 HTTP 错误",
+    "ERR_CONNECTION_FAILED": "连接失败",
+    "ERR_TIMEOUT": "超时（10s）",
+    "ERR_TLS_TUNNEL_ERROR": "TLS 隧道建立但返回内容异常",
+    "ERR_TLS_FAILED": "TLS 失败",
+    "ERR_LOGIN_FAILED": "登录失败",
+    "ERR_EMAIL_NOT_FOUND": "该邮箱未注册邮箱密码登录方式。若通过 Google/GitHub OAuth 注册，请使用 OAuth 按钮或访问 windsurf.com/show-auth-token 复制 Auth Token",
+    "ERR_INVALID_PASSWORD": "密码错误",
+    "ERR_INVALID_CREDENTIALS": "邮箱或密码错误",
+    "ERR_NO_PASSWORD_SET": "该账号未设置密码登录方式。使用 Google/GitHub OAuth 或访问 windsurf.com/show-auth-token 复制 Auth Token",
+    "ERR_USER_DISABLED": "账号已被停用",
+    "ERR_TOO_MANY_ATTEMPTS": "尝试太多次 请稍后再试",
+    "ERR_INVALID_EMAIL": "邮箱格式错误",
+    "ERR_CODEIUM_REGISTER_FAILED": "Codeium 注册失败",
+    "ERR_AUTH1_TOKEN_MISSING": "Auth1 回应缺少 token",
+    "ERR_POSTAUTH_FAILED": "Windsurf PostAuth 失败",
+    "ERR_TOKEN_FETCH_FAILED": "获取一次性 Auth Token 失败",
+    "ERR_FIREBASE_TOKEN_MISSING": "Firebase 回应缺少 idToken"
   },
 
   "footer": {

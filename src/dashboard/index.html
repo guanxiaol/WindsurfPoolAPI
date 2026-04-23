@@ -2080,39 +2080,39 @@ const App = {
     const poolCount = (ls.instances || []).length || (ls.running ? 1 : 0);
     document.getElementById('overview-cards').innerHTML = `
       <div class="card success">
-        <div class="card-header"><div class="card-title">活跃账号</div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.activeAccounts.title')}</div>
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         </div>
         <div class="card-value">${d.accounts?.active || 0}</div>
-        <div class="card-sub">${d.accounts?.total || 0} 个总账号 · ${d.accounts?.error || 0} 异常</div>
+        <div class="card-sub">${I18n.t('card.activeAccounts.subtitle', { total: d.accounts?.total || 0, error: d.accounts?.error || 0 })}</div>
       </div>
       <div class="card info">
-        <div class="card-header"><div class="card-title">总请求数</div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.totalRequests.title')}</div>
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         </div>
         <div class="card-value">${d.totalRequests || 0}</div>
-        <div class="card-sub">成功率 ${d.successRate || 0}%</div>
+        <div class="card-sub">${I18n.t('card.totalRequests.subtitle', { rate: d.successRate || 0 })}</div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">运行时间</div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.uptime.title')}</div>
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
         <div class="card-value" style="font-size:20px">${uptime}</div>
-        <div class="card-sub">启动于 ${d.startedAt ? new Date(d.startedAt).toLocaleString() : '-'}</div>
+        <div class="card-sub">${I18n.t('card.uptime.subtitle', { time: d.startedAt ? new Date(d.startedAt).toLocaleString() : '-' })}</div>
       </div>
       <div class="card ${ls.running ? 'success' : 'error'}">
-        <div class="card-header"><div class="card-title">Language Server</div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.languageServer.title')}</div>
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
         </div>
-        <div class="card-value" style="font-size:20px">${ls.running ? '运行中' : '已停止'}</div>
-        <div class="card-sub">${poolCount} 个实例 · 端口 ${ls.port || '-'}</div>
+        <div class="card-value" style="font-size:20px">${I18n.t(ls.running ? 'card.languageServer.running' : 'card.languageServer.stopped')}</div>
+        <div class="card-sub">${I18n.t('card.languageServer.subtitle', { count: poolCount, port: ls.port || '-' })}</div>
       </div>
       <div class="card info">
-        <div class="card-header"><div class="card-title">响应缓存</div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.responseCache.title')}</div>
           <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
         </div>
         <div class="card-value">${d.cache?.hitRate || '0.0'}%</div>
-        <div class="card-sub">${d.cache?.hits || 0} 命中 / ${d.cache?.misses || 0} 未命中 · ${d.cache?.size || 0}/${d.cache?.maxSize || 0} 条</div>
+        <div class="card-sub">${I18n.t('card.responseCache.subtitle', { hits: d.cache?.hits || 0, misses: d.cache?.misses || 0, size: d.cache?.size || 0, max: d.cache?.maxSize || 0 })}</div>
       </div>
     `;
     const instances = ls.instances || [];
@@ -2123,17 +2123,17 @@ const App = {
             <div class="ls-inst">
               <div class="ls-key">
                 <span class="ls-dot ${i.ready ? '' : 'pending'}"></span>
-                ${this.esc(i.key === 'default' ? '默认实例' : i.key.replace(/^px_/, ''))}
+                ${this.esc(i.key === 'default' ? I18n.t('card.defaultInstance') : i.key.replace(/^px_/, ''))}
               </div>
-              <div class="ls-meta">端口 ${i.port} · PID ${i.pid || '-'}</div>
-              <div class="ls-meta">${this.esc(i.proxy || '无代理')}</div>
+              <div class="ls-meta">${I18n.t('field.port.label')} ${i.port} · PID ${i.pid || '-'}</div>
+              <div class="ls-meta">${this.esc(i.proxy || I18n.t('card.noProxy'))}</div>
             </div>
           `).join('')}
         </div>`;
     } else {
       document.getElementById('ls-status').innerHTML = `
-        <span class="badge ${ls.running ? 'running' : 'stopped'}">${ls.running ? '运行中' : '已停止'}</span>
-        <span class="text-sm text-muted" style="margin-left:12px">PID ${ls.pid || '-'} · 端口 ${ls.port || '-'} · 重启 ${ls.restartCount || 0} 次</span>
+        <span class="badge ${ls.running ? 'running' : 'stopped'}">${I18n.t(ls.running ? 'card.languageServer.running' : 'card.languageServer.stopped')}</span>
+        <span class="text-sm text-muted" style="margin-left:12px">PID ${ls.pid || '-'} · ${I18n.t('field.port.label')} ${ls.port || '-'} · ${I18n.t('card.restarts')} ${ls.restartCount || 0}</span>
       `;
     }
     this.poll('overview', () => this.loadOverview(), 15000);
@@ -3161,10 +3161,10 @@ const App = {
     const fmtUptime = s => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}m` : s < 86400 ? `${(s/3600).toFixed(1)}h` : `${(s/86400).toFixed(1)}d`;
 
     document.getElementById('stats-cards').innerHTML = `
-      <div class="card info"><div class="card-header"><div class="card-title">总请求</div></div><div class="card-value">${totalReq}</div><div class="card-sub">运行 ${fmtUptime(uptimeSec)}</div></div>
-      <div class="card success"><div class="card-header"><div class="card-title">成功</div></div><div class="card-value">${d.successCount || 0}</div><div class="card-sub">成功率 ${successRate}%</div></div>
-      <div class="card error"><div class="card-header"><div class="card-title">错误</div></div><div class="card-value">${d.errorCount || 0}</div><div class="card-sub">失败率 ${totalReq > 0 ? (100-Number(successRate)).toFixed(1) : '0.0'}%</div></div>
-      <div class="card accent"><div class="card-header"><div class="card-title">平均 p95 延迟</div></div><div class="card-value">${avgP95}<span style="font-size:14px;font-weight:400;margin-left:4px">ms</span></div><div class="card-sub">${allP95.length} 个模型</div></div>
+      <div class="card info"><div class="card-header"><div class="card-title">${I18n.t('card.stats.title')}</div></div><div class="card-value">${totalReq}</div><div class="card-sub">${I18n.t('card.stats.subtitle', { time: fmtUptime(uptimeSec) })}</div></div>
+      <div class="card success"><div class="card-header"><div class="card-title">${I18n.t('card.success.title')}</div></div><div class="card-value">${d.successCount || 0}</div><div class="card-sub">${I18n.t('card.success.subtitle', { rate: successRate })}</div></div>
+      <div class="card error"><div class="card-header"><div class="card-title">${I18n.t('card.errors.title')}</div></div><div class="card-value">${d.errorCount || 0}</div><div class="card-sub">${I18n.t('card.errors.subtitle', { rate: totalReq > 0 ? (100-Number(successRate)).toFixed(1) : '0.0' })}</div></div>
+      <div class="card accent"><div class="card-header"><div class="card-title">${I18n.t('card.p95Latency.title')}</div></div><div class="card-value">${avgP95}<span style="font-size:14px;font-weight:400;margin-left:4px">ms</span></div><div class="card-sub">${I18n.t('card.p95Latency.subtitle', { count: allP95.length })}</div></div>
     `;
 
     const models = d.modelCounts || {};
@@ -3248,19 +3248,19 @@ const App = {
     const pool = d.conversationPool || {};
     document.getElementById('exp-pool-cards').innerHTML = `
       <div class="card info">
-        <div class="card-header"><div class="card-title">命中率</div></div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.hitRate.title')}</div></div>
         <div class="card-value">${pool.hitRate || '0.0'}%</div>
-        <div class="card-sub">${pool.hits || 0} 命中 / ${pool.misses || 0} 未命中</div>
+        <div class="card-sub">${I18n.t('card.hitRate.subtitle', { hits: pool.hits || 0, misses: pool.misses || 0 })}</div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">对话池</div></div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.poolSize.title')}</div></div>
         <div class="card-value">${pool.size || 0}</div>
-        <div class="card-sub">上限 ${pool.maxSize || 0} · TTL ${Math.round((pool.ttlMs || 0) / 60000)} 分钟</div>
+        <div class="card-sub">${I18n.t('card.poolSize.subtitle', { max: pool.maxSize || 0, ttl: Math.round((pool.ttlMs || 0) / 60000) })}</div>
       </div>
       <div class="card">
-        <div class="card-header"><div class="card-title">存储次数</div></div>
+        <div class="card-header"><div class="card-title">${I18n.t('card.stores.title')}</div></div>
         <div class="card-value">${pool.stores || 0}</div>
-        <div class="card-sub">过期 ${pool.expired || 0} · 淘汰 ${pool.evictions || 0}</div>
+        <div class="card-sub">${I18n.t('card.stores.subtitle', { expired: pool.expired || 0, evicted: pool.evictions || 0 })}</div>
       </div>
     `;
 
@@ -3274,14 +3274,18 @@ const App = {
     const sp = await this.api('GET', '/system-prompts');
     const spHolder = document.getElementById('system-prompts-editor');
     if (spHolder) {
-      const labels = {toolReinforcement:'工具调用格式指引',communicationWithTools:'有工具时的通信指令',communicationNoTools:'无工具时的通信指令'};
+      const labels = {
+        toolReinforcement: I18n.t('experimental.toolReinforcement'),
+        communicationWithTools: I18n.t('experimental.communicationWithTools'),
+        communicationNoTools: I18n.t('experimental.communicationNoTools')
+      };
       spHolder.innerHTML = Object.entries(sp.prompts || {}).map(([key, text]) => `
         <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--surface)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div><code style="color:var(--accent);font-weight:600">${key}</code> <span class="text-sm text-muted">${labels[key]||key}</span></div>
             <div class="btn-group">
-              <button class="btn btn-ghost btn-xs" onclick="App.resetSystemPrompt('${key}')">重置</button>
-              <button class="btn btn-primary btn-xs" onclick="App.saveSystemPrompt('${key}')">保存</button>
+              <button class="btn btn-ghost btn-xs" onclick="App.resetSystemPrompt('${key}')">${I18n.t('experimental.default')}</button>
+              <button class="btn btn-primary btn-xs" onclick="App.saveSystemPrompt('${key}')">${I18n.t('experimental.save')}</button>
             </div>
           </div>
           <textarea id="sp-${key}" class="input" rows="3" style="width:100%;font-family:var(--mono);font-size:12px;resize:vertical;line-height:1.5">${this.esc(text)}</textarea>
@@ -3304,17 +3308,17 @@ const App = {
             <div style="display:flex;align-items:center;gap:8px">
               <code style="color:var(--accent);font-weight:600">${provider}</code>
               <span class="text-sm text-muted">${label}</span>
-              ${isDefault ? '' : '<span class="text-xs" style="background:var(--accent);color:#fff;padding:2px 6px;border-radius:3px">已自定义</span>'}
+              ${isDefault ? '' : `<span class="text-xs" style="background:var(--accent);color:#fff;padding:2px 6px;border-radius:3px">${I18n.t('card.custom')}</span>`}
             </div>
             <div class="btn-group">
-              <button class="btn btn-ghost btn-xs" onclick="App.resetIdentityPrompt('${provider}')" ${isDefault ? 'disabled' : ''}>恢复默认</button>
-              <button class="btn btn-primary btn-xs" onclick="App.saveIdentityPrompt('${provider}')">保存</button>
+              <button class="btn btn-ghost btn-xs" onclick="App.resetIdentityPrompt('${provider}')" ${isDefault ? 'disabled' : ''}>${I18n.t('experimental.restoreDefault')}</button>
+              <button class="btn btn-primary btn-xs" onclick="App.saveIdentityPrompt('${provider}')">${I18n.t('experimental.save')}</button>
             </div>
           </div>
           <textarea id="id-prompt-${provider}" class="input" rows="3" style="width:100%;font-family:var(--mono);font-size:12px;resize:vertical;line-height:1.5">${this.esc(text)}</textarea>
         </div>
       `;
-    }).join('') || '<div class="text-muted text-sm">无匹配</div>';
+    }).join('') || `<div class="text-muted text-sm">${I18n.t('experimental.noMatch')}</div>`;
   },
 
   filterIdentityPrompts(v) { this.renderIdentityPrompts(v); },
@@ -3323,21 +3327,21 @@ const App = {
     const ta = document.getElementById(`id-prompt-${provider}`);
     if (!ta) return;
     const v = ta.value.trim();
-    if (!v) return this.toast('模板不能为空', 'error');
+    if (!v) return this.toast(I18n.t('experimental.promptEmpty'), 'error');
     if (!v.includes('{model}')) {
-      const ok = await this.confirm('缺少 {model} 占位符', '保存后该厂商的模型名将无法被替换进提示词。确定继续？', { okText: '仍然保存' });
+      const ok = await this.confirm(I18n.t('experimental.missingPlaceholder'), I18n.t('experimental.missingPlaceholderDesc') || 'Save anyway?', { okText: I18n.t('button.save') });
       if (!ok) return;
     }
     await this.api('PUT', '/identity-prompts', { [provider]: v });
-    this.toast(`${provider} 模板已保存`, 'success');
+    this.toast(`${provider} ${I18n.t('toast.saved')}`, 'success');
     this.loadExperimental();
   },
 
   async resetIdentityPrompt(provider) {
-    const ok = await this.confirm('恢复默认', `确定将 ${provider} 模板恢复到默认？`, { okText: '恢复' });
+    const ok = await this.confirm(I18n.t('experimental.restoreDefault'), `${provider} ${I18n.t('confirm.restoreDefaultDesc') || 'restore to default?'}`, { okText: I18n.t('experimental.restoreDefault') });
     if (!ok) return;
     await this.api('DELETE', `/identity-prompts/${provider}`);
-    this.toast(`${provider} 已恢复默认`, 'success');
+    this.toast(`${provider} ${I18n.t('experimental.restored') || 'restored'}`, 'success');
     this.loadExperimental();
   },
 
@@ -3345,14 +3349,14 @@ const App = {
     const ta = document.getElementById(`sp-${key}`);
     if (!ta) return;
     await this.api('PUT', '/system-prompts', { [key]: ta.value.trim() });
-    this.toast(`${key} 已保存`, 'success');
+    this.toast(`${key} ${I18n.t('toast.saved')}`, 'success');
   },
 
   async resetSystemPrompt(key) {
-    const ok = await this.confirm('重置', `确定将 ${key} 恢复为默认？`, { okText: '重置' });
+    const ok = await this.confirm(I18n.t('action.reset'), `${key} ${I18n.t('confirm.restoreDefaultDesc') || 'restore to default?'}`, { okText: I18n.t('action.reset') });
     if (!ok) return;
     await this.api('DELETE', `/system-prompts/${key}`);
-    this.toast(`${key} 已重置`, 'success');
+    this.toast(`${key} ${I18n.t('experimental.restored') || 'reset'}`, 'success');
     this.loadExperimental();
   },
 
@@ -3397,10 +3401,10 @@ const App = {
   },
 
   async clearConversationPool() {
-    const ok = await this.confirm('清空对话池', '当前所有进行中的 Cascade 会话都将放弃复用，确定继续吗？', { okText: '清空' });
+    const ok = await this.confirm(I18n.t('action.clearPool'), I18n.t('confirm.clearPoolDesc') || 'All active Cascade sessions will be cleared. Continue?', { okText: I18n.t('action.clearPool') });
     if (!ok) return;
     const r = await this.api('DELETE', '/experimental/conversation-pool');
-    this.toast(`已清空 ${r.cleared || 0} 条会话`, 'success');
+    this.toast(`${I18n.t('toast.cleared')} ${r.cleared || 0}`, 'success');
     this.loadExperimental();
   },
 
