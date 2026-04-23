@@ -133,6 +133,9 @@
   },
 
   "section": {
+    "banStatus": {
+      "title": "Health Status"
+    },
     "lsStatus": {
       "title": "Language Server",
       "desc": "Language Server instance status"
@@ -155,7 +158,8 @@
     },
     "addAccount": {
       "title": "Add Account",
-      "desc": "Supports both API Key and Auth Token methods"
+      "desc": "Supports both API Key and Auth Token methods",
+      "hint": "Recommended: Use Token method. Visit {{link}} after logging in, copy the Token and paste below. Works with all login methods (Email/Google/GitHub)."
     },
     "accountList": {
       "title": "Account List",
@@ -185,6 +189,19 @@
     "identityInjection": {
       "title": "Model Identity Injection",
       "desc": "When enabled, injects a system prompt at the start of each request, overriding Cascade's built-in Windsurf identity; each provider's template below can be customized and takes effect immediately after saving."
+    },
+    "cascadeReuse": {
+      "title": "Cascade Conversation Reuse",
+      "desc": "Reuse cascade_id across multi-turn conversations to maintain context cache on the server side.",
+      "enable": "Enable Cascade Conversation Reuse",
+      "hint": "Disabled by default. When enabled, takes effect immediately on current conversation pool."
+    },
+    "identityPrompt": {
+      "title": "Model Identity Prompt",
+      "desc": "Inject model identity system prompt at the start of each request.",
+      "enable": "Enable Model Identity Injection",
+      "hint": "Enabled by default; templates below won't work when disabled.",
+      "templateHint": "Each provider's template is editable. {{model}} placeholder will be replaced with the requested model name."
     },
     "systemPrompts": {
       "title": "System Prompts",
@@ -286,6 +303,13 @@
     "logLevel": {
       "label": "Log Level"
     },
+    "identitySearch": {
+      "placeholder": "Search providers..."
+    },
+    "search": {
+      "label": "Search",
+      "placeholder": "Search..."
+    },
     "autoScroll": "Auto-scroll",
     "autoAdd": "Auto-add to pool after login"
   },
@@ -306,6 +330,7 @@
       "error": "Error",
       "lastUsed": "Last Used",
       "key": "Key",
+      "accountId": "Account ID",
       "account": "Account",
       "requests": "Requests",
       "success": "Success",
@@ -404,10 +429,12 @@
 
   "credits": {
     "contributors": "Core Contributors",
-    "cta": "Want to join this list?",
-    "ctaDesc": "Open an issue or pull request on GitHub — bug fixes, new models, UI improvements, or security findings all get recognised here.",
-    "openIssue": "Open Issue",
-    "openPR": "Open PR"
+    "cta": {
+      "title": "Want to join this list?",
+      "desc": "Open an issue or pull request on GitHub — bug fixes, new models, UI improvements, or security findings all get recognised here.",
+      "issue": "Open Issue",
+      "pr": "Open PR"
+    }
   },
 
   "experimental": {
