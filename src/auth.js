@@ -838,13 +838,11 @@ export async function fetchUserStatus(id) {
 // Order matters: free-tier models first so tier can be inferred early even if
 // later requests rate-limit. modelUid-only entries cover the 4.6 series since
 // GetUserStatus's allowlist is enum-keyed.
+// Only probe cheap/non-rate-limited models. Claude models burn Trial quota
+// fast (2-3 req/hr) — GetUserStatus enum allowlist already covers them.
 const PROBE_CANARIES = [
-  'gpt-4o-mini',
   'gemini-2.5-flash',
-  'claude-sonnet-4.6',
-  'claude-opus-4.6',
   'gemini-3.0-flash',
-  'claude-4.5-sonnet',
 ];
 
 /**
