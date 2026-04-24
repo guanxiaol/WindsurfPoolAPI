@@ -503,6 +503,204 @@ tbody tr:hover td { background: var(--surface-2); }
   font-style: italic;
 }
 
+/* ─── Account detail panel (expand-in-row) ──────────── */
+.expand-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all .15s ease;
+  font-size: 10px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.expand-chevron:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+.expand-chevron.open {
+  color: var(--accent);
+  transform: rotate(90deg);
+}
+.account-detail-row > td {
+  padding: 0 !important;
+  background: #0d0d10 !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.account-detail-wrap {
+  padding: 20px 28px;
+  background: linear-gradient(180deg, rgba(99,102,241,.04), transparent 80%);
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+@media (max-width: 1100px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.detail-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 10px;
+}
+.detail-card-head .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.detail-kv {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 4px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.detail-kv > .k { color: var(--text-dim); }
+.detail-kv > .v { color: var(--text); font-variant-numeric: tabular-nums; }
+.detail-kv code { font-size: 11px; padding: 1px 5px; }
+
+.detail-bar {
+  display: grid;
+  grid-template-columns: 60px 1fr 50px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.detail-bar .bar-label { color: var(--text-dim); font-size: 11px; }
+.detail-bar .bar-track {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.detail-bar .bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .6s cubic-bezier(.2,.8,.2,1);
+}
+.detail-bar .bar-pct {
+  text-align: right;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+.detail-bar .bar-reset {
+  grid-column: 2 / 4;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+/* Model list grouped by provider */
+.model-list-card { grid-column: 1 / -1; }
+.model-group {
+  margin-bottom: 14px;
+}
+.model-group:last-child { margin-bottom: 0; }
+.model-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--border);
+}
+.model-group-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: .02em;
+}
+.model-group-count {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+.model-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 6px;
+}
+.model-chip {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11.5px;
+  transition: all .15s ease;
+}
+.model-chip:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+.model-chip.blocked {
+  opacity: .45;
+  text-decoration: line-through;
+  text-decoration-color: var(--text-dim);
+  text-decoration-thickness: 1px;
+}
+.model-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+}
+.model-chip.blocked .model-chip-dot { background: var(--error); }
+.model-chip-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.model-chip-cost {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--warn);
+  padding: 1px 6px;
+  background: rgba(245,158,11,.08);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: 10px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.provider-swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 /* ─── Badges ──────────────────────────────────── */
 .badge {
   display: inline-flex;
@@ -2888,9 +3086,13 @@ const App = {
             ${bar(shortW, cr.weeklyPercent, weeklyTip)}
           </div>`;
       }
+      const isExpanded = this._expandedAccounts?.has(a.id);
       return `
-      <tr>
-        <td><code>${a.id}</code></td>
+      <tr${isExpanded ? ' class="expanded"' : ''}>
+        <td>
+          <button class="expand-chevron ${isExpanded ? 'open' : ''}" onclick="App.toggleAccountDetail('${this.escJsAttr(a.id)}')" title="${I18n.t('account.detail.toggle')}">▸</button>
+          <code>${a.id}</code>
+        </td>
         <td>${this.esc(a.email)}</td>
         <td>
           <div style="display:flex;flex-direction:column;gap:2px">
@@ -2918,8 +3120,176 @@ const App = {
             <button class="btn btn-ghost btn-xs" style="color:var(--error)" onclick="App.deleteAccount('${this.escJsAttr(a.id)}')">${I18n.t('action.delete')}</button>
           </div>
         </td>
-      </tr>`;
+      </tr>${isExpanded ? `<tr class="account-detail-row"><td colspan="11">${this.renderAccountDetail(a)}</td></tr>` : ''}`;
     }).join('') || `<tr class="empty-row"><td colspan="11">${I18n.t('table.empty.accounts')}</td></tr>`;
+  },
+
+  _expandedAccounts: new Set(),
+  _modelsCatalog: null,
+
+  async _ensureModelsCatalog() {
+    if (this._modelsCatalog) return this._modelsCatalog;
+    try {
+      const r = await this.api('GET', '/models');
+      this._modelsCatalog = {};
+      for (const m of (r.models || [])) this._modelsCatalog[m.id] = m;
+    } catch {
+      this._modelsCatalog = {};
+    }
+    return this._modelsCatalog;
+  },
+
+  toggleAccountDetail(id) {
+    if (!this._expandedAccounts) this._expandedAccounts = new Set();
+    if (this._expandedAccounts.has(id)) {
+      this._expandedAccounts.delete(id);
+    } else {
+      this._expandedAccounts.add(id);
+      this._ensureModelsCatalog().then(() => this.loadAccounts());
+      return;
+    }
+    this.loadAccounts();
+  },
+
+  renderAccountDetail(a) {
+    const cr = a.credits || {};
+    const us = a.userStatus || {};
+    const catalog = this._modelsCatalog || {};
+    const T = (k, v) => I18n.t('account.detail.' + k, v);
+    const barColor = (v) => v == null ? 'var(--text-dim)' : v <= 10 ? 'var(--error)' : v <= 30 ? 'var(--warn, #f59e0b)' : 'var(--success, #10b981)';
+    const fmtUnix = (u) => u ? new Date(u * 1000).toLocaleString() : '—';
+    const fmtDate = (v) => v ? new Date(v).toLocaleDateString() : '—';
+    const fmtAgo = (ts) => {
+      if (!ts) return '—';
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return `${s}s ${T('ago')}`;
+      if (s < 3600) return `${Math.floor(s/60)}m ${T('ago')}`;
+      if (s < 86400) return `${Math.floor(s/3600)}h ${T('ago')}`;
+      return `${Math.floor(s/86400)}d ${T('ago')}`;
+    };
+    const renderBar = (label, pct, resetAt, noDataText) => {
+      const isN = pct == null;
+      const v = isN ? 0 : Math.max(0, Math.min(100, pct));
+      const c = isN ? 'var(--text-dim)' : barColor(v);
+      const track = `<div class="bar-track"><div class="bar-fill" style="width:${v}%;background:${c}"></div></div>`;
+      const val = isN ? '—' : v.toFixed(0) + '%';
+      const reset = resetAt
+        ? `<div class="bar-reset">⟳ ${T('resetAt')} ${fmtUnix(resetAt)}</div>`
+        : (isN && noDataText ? `<div class="bar-reset" style="color:var(--warn)">${noDataText}</div>` : '');
+      return `<div class="detail-bar">
+        <span class="bar-label">${label}</span>
+        ${track}
+        <span class="bar-pct" style="color:${c}">${val}</span>
+        ${reset}
+      </div>`;
+    };
+
+    // Group tierModels by provider
+    const tierModels = a.tierModels || [];
+    const blocked = new Set(a.blockedModels || []);
+    const providerOrder = ['anthropic', 'openai', 'google', 'deepseek', 'xai', 'alibaba', 'moonshot', 'zhipu', 'minimax', 'windsurf', 'other'];
+    const providerColors = {
+      anthropic: '#d97706', openai: '#10b981', google: '#4285f4', deepseek: '#7c3aed',
+      xai: '#e11d48', alibaba: '#ec4899', moonshot: '#06b6d4', zhipu: '#8b5cf6',
+      minimax: '#f43f5e', windsurf: '#6366f1', other: '#71717a',
+    };
+    const providerLabels = {
+      anthropic: 'Anthropic · Claude', openai: 'OpenAI · GPT / o', google: 'Google · Gemini',
+      deepseek: 'DeepSeek', xai: 'xAI · Grok', alibaba: 'Alibaba · Qwen',
+      moonshot: 'Moonshot · Kimi', zhipu: 'Zhipu · GLM', minimax: 'MiniMax',
+      windsurf: 'Windsurf · SWE', other: 'Other',
+    };
+    const groups = {};
+    for (const m of tierModels) {
+      const info = catalog[m] || {};
+      const prov = info.provider || 'other';
+      (groups[prov] = groups[prov] || []).push({ id: m, ...info });
+    }
+    const availCount = tierModels.length - blocked.size;
+    const modelGroupsHtml = providerOrder
+      .filter(p => groups[p])
+      .map(p => {
+        const models = groups[p].sort((a, b) => (a.credit || 0) - (b.credit || 0));
+        const blockedIn = models.filter(m => blocked.has(m.id)).length;
+        const availIn = models.length - blockedIn;
+        return `<div class="model-group">
+          <div class="model-group-head">
+            <span class="model-group-name"><span class="provider-swatch" style="background:${providerColors[p]}"></span>${providerLabels[p] || p}</span>
+            <span class="model-group-count">${availIn}/${models.length}</span>
+          </div>
+          <div class="model-chips">
+            ${models.map(m => `<div class="model-chip ${blocked.has(m.id) ? 'blocked' : ''}" title="${m.id}">
+              <span class="model-chip-dot"></span>
+              <span class="model-chip-name">${this.esc(m.id)}</span>
+              ${m.credit != null ? `<span class="model-chip-cost" title="${T('creditPerCall')}">${m.credit}${T('creditUnit')}</span>` : `<span class="model-chip-cost" style="color:var(--text-dim);background:transparent;border-color:var(--border)">—</span>`}
+            </div>`).join('')}
+          </div>
+        </div>`;
+      }).join('');
+
+    // Plan dates
+    let trialDaysLeft = null;
+    if (us.trialEndMs) trialDaysLeft = Math.max(0, Math.ceil((us.trialEndMs - Date.now()) / 86400000));
+
+    return `
+    <div class="account-detail-wrap">
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-card-head"><span class="dot"></span>${T('plan.title')}</div>
+          <div class="detail-kv">
+            <span class="k">${T('plan.name')}</span><span class="v"><b>${this.esc(cr.planName || us.planName || '—')}</b></span>
+            <span class="k">${T('plan.tier')}</span><span class="v"><span class="tier ${this.esc(a.tier || 'unknown')}" style="padding:1px 8px;font-size:10px">${this.esc(a.tier || 'unknown')}</span>${a.tierManual ? ' <span style="color:var(--text-dim);font-size:10px">✎ manual</span>' : ''}</span>
+            <span class="k">${T('plan.start')}</span><span class="v">${fmtDate(cr.planStart || us.planStart)}</span>
+            <span class="k">${T('plan.end')}</span><span class="v">${fmtDate(cr.planEnd || us.planEnd)}${trialDaysLeft != null ? ` <span style="color:${trialDaysLeft <= 3 ? 'var(--error)' : 'var(--text-dim)'};font-size:11px">(${trialDaysLeft}d left)</span>` : ''}</span>
+            ${cr.overageBalance != null ? `<span class="k">${T('plan.overage')}</span><span class="v">$${cr.overageBalance.toFixed(4)}</span>` : ''}
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-card-head"><span class="dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn)"></span>${T('quota.title')}</div>
+          ${renderBar(T('quota.daily'), cr.dailyPercent, cr.dailyResetAt, I18n.t('creditsBar.dailyNA'))}
+          ${renderBar(T('quota.weekly'), cr.weeklyPercent, cr.weeklyResetAt, I18n.t('creditsBar.weeklyNA'))}
+          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)" class="detail-kv">
+            ${cr.prompt?.limit ? `<span class="k">${T('quota.promptCredits')}</span><span class="v"><b>${cr.prompt.remaining ?? 0}</b> / ${cr.prompt.limit} <span style="color:var(--text-dim);font-size:10px">(${T('quota.used')} ${cr.prompt.used ?? 0})</span></span>` : `<span class="k">${T('quota.promptCredits')}</span><span class="v" style="color:var(--text-dim)">${T('quota.notApplicable')}</span>`}
+            ${cr.flex?.limit ? `<span class="k">${T('quota.flexCredits')}</span><span class="v"><b>${cr.flex.remaining ?? 0}</b> / ${cr.flex.limit} <span style="color:var(--text-dim);font-size:10px">(${T('quota.used')} ${cr.flex.used ?? 0})</span></span>` : `<span class="k">${T('quota.flexCredits')}</span><span class="v" style="color:var(--text-dim)">${T('quota.notApplicable')}</span>`}
+            <span class="k">${T('quota.fetchedAt')}</span><span class="v">${fmtAgo(cr.fetchedAt)}</span>
+          </div>
+        </div>
+
+        <div class="detail-card" style="grid-column:1/-1">
+          <div class="detail-card-head">
+            <span class="dot" style="background:var(--success);box-shadow:0 0 6px var(--success)"></span>
+            ${T('models.title')}
+            <span style="color:var(--text-dim);font-weight:400;font-size:11px;margin-left:6px">${availCount} / ${tierModels.length} ${T('models.available')}${blocked.size > 0 ? ` · ${blocked.size} ${T('models.blocked')}` : ''}</span>
+            <div style="margin-left:auto;display:flex;gap:4px">
+              <button class="btn btn-ghost btn-xs" onclick="App.openBlockedModal('${this.escJsAttr(a.id)}')" style="font-size:10px">${I18n.t('account.editModels')}</button>
+            </div>
+          </div>
+          ${tierModels.length === 0 ? `<div style="color:var(--text-dim);font-size:12px;padding:10px 0">${I18n.t('toast.noTierModels')}</div>` : modelGroupsHtml}
+        </div>
+
+        <div class="detail-card" style="grid-column:1/-1">
+          <div class="detail-card-head"><span class="dot" style="background:var(--info);box-shadow:0 0 6px var(--info)"></span>${T('runtime.title')}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px">
+            <div class="detail-kv">
+              <span class="k">${T('runtime.status')}</span><span class="v"><span class="badge ${a.status}">${a.status}</span>${a.rateLimited ? ` <span class="badge warn">${I18n.t('card.rateLimit.badge')}</span>` : ''}</span>
+              <span class="k">${T('runtime.errors')}</span><span class="v" style="color:${a.errorCount > 0 ? 'var(--error)' : 'inherit'}">${a.errorCount || 0}</span>
+              <span class="k">${T('runtime.rpm')}</span><span class="v">${a.rpmUsed ?? 0} / ${a.rpmLimit ?? 0}</span>
+            </div>
+            <div class="detail-kv">
+              <span class="k">${T('runtime.lastUsed')}</span><span class="v">${fmtAgo(a.lastUsed)}</span>
+              <span class="k">${T('runtime.lastProbed')}</span><span class="v">${fmtAgo(a.lastProbed || a.userStatusLastFetched)}</span>
+              <span class="k">${T('runtime.creditsFetched')}</span><span class="v">${fmtAgo(cr.fetchedAt)}</span>
+            </div>
+            <div class="detail-kv">
+              <span class="k">${T('runtime.accountId')}</span><span class="v"><code>${a.id}</code></span>
+              <span class="k">${T('runtime.apiKey')}</span><span class="v"><code style="cursor:pointer" onclick="App.copyKey('${this.escJsAttr(a.apiKey)}')" title="${I18n.t('action.copyTitle')}">${a.keyPrefix}</code></span>
+              ${cr.lastError ? `<span class="k">${T('runtime.lastError')}</span><span class="v" style="color:var(--error);font-size:11px">${this.esc(cr.lastError).slice(0, 80)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
   },
 
   async refreshCredits(id) {

@@ -483,6 +483,7 @@ export async function handleDashboardApi(method, subpath, body, req, res) {
   if (subpath === '/models' && method === 'GET') {
     const models = Object.entries(MODELS).map(([id, info]) => ({
       id, name: info.name, provider: info.provider,
+      credit: typeof info.credit === 'number' ? info.credit : null,
     }));
     return json(res, 200, { models });
   }

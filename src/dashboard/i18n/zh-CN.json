@@ -681,6 +681,48 @@
     },
     "ls": {
       "restarting": "Language Server 重启中..."
+    },
+    "detail": {
+      "toggle": "展开/收起详情",
+      "ago": "前",
+      "resetAt": "重置于",
+      "creditPerCall": "每次调用扣费",
+      "creditUnit": " 点",
+      "plan": {
+        "title": "订阅信息",
+        "name": "套餐",
+        "tier": "层级",
+        "start": "开始",
+        "end": "到期",
+        "overage": "透支余额"
+      },
+      "quota": {
+        "title": "配额使用",
+        "daily": "每日",
+        "weekly": "每周",
+        "promptCredits": "提示词额度",
+        "flexCredits": "Flex 额度",
+        "used": "已用",
+        "fetchedAt": "数据时间",
+        "notApplicable": "本套餐不适用"
+      },
+      "models": {
+        "title": "可用模型",
+        "available": "可用",
+        "blocked": "已屏蔽"
+      },
+      "runtime": {
+        "title": "运行状态",
+        "status": "状态",
+        "errors": "错误数",
+        "rpm": "RPM 用量",
+        "lastUsed": "最后使用",
+        "lastProbed": "最后探测",
+        "creditsFetched": "额度刷新",
+        "accountId": "账号 ID",
+        "apiKey": "API Key",
+        "lastError": "上次错误"
+      }
     }
   },
 

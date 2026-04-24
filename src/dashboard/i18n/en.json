@@ -681,6 +681,48 @@
     },
     "ls": {
       "restarting": "Language Server restarting..."
+    },
+    "detail": {
+      "toggle": "Expand / collapse details",
+      "ago": "ago",
+      "resetAt": "resets",
+      "creditPerCall": "Credits charged per call",
+      "creditUnit": "",
+      "plan": {
+        "title": "Subscription",
+        "name": "Plan",
+        "tier": "Tier",
+        "start": "Start",
+        "end": "End",
+        "overage": "Overage balance"
+      },
+      "quota": {
+        "title": "Quota Usage",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "promptCredits": "Prompt credits",
+        "flexCredits": "Flex credits",
+        "used": "used",
+        "fetchedAt": "Fetched",
+        "notApplicable": "Not applicable to this plan"
+      },
+      "models": {
+        "title": "Available Models",
+        "available": "available",
+        "blocked": "blocked"
+      },
+      "runtime": {
+        "title": "Runtime",
+        "status": "Status",
+        "errors": "Errors",
+        "rpm": "RPM",
+        "lastUsed": "Last used",
+        "lastProbed": "Last probed",
+        "creditsFetched": "Credits refreshed",
+        "accountId": "Account ID",
+        "apiKey": "API Key",
+        "lastError": "Last error"
+      }
     }
   },
 
