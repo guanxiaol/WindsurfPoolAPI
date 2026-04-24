@@ -31,15 +31,18 @@ const _repoRoot = (() => {
   } catch { return '/root/WindsurfAPI'; }
 })();
 
-// Placeholder shape: an HTML-ish tag (`<redacted-path>`) is intentionally
-// chosen because no shell/file API will try to resolve it as a real path,
-// and downstream LLMs (when the response is fed back as assistant history in
-// later turns) don't treat angle-bracketed tokens as filenames. Earlier
-// attempts used "./tail" (LLM followed the path and Reads looped on ENOENT)
-// and "[internal]" (LLM treated it as a bracketed directory name and tried
-// `ls [internal]`, looping the same way) — both were confused with actual
-// paths. Angle brackets break that confusion at the tokenization level.
-const REDACTED_PATH = '<redacted-path>';
+// Placeholder chosen as a parenthesised natural-language phrase because
+// every punctuation-only marker we tried has been re-used by the model
+// as a real path in later turns:
+//   ./tail            → LLM Reads ./src/main.py → ENOENT → loops
+//   [internal]        → LLM runs `ls [internal]` → ENOENT → loops
+//   <redacted-path>   → LLM passes it as file_path arg to Read/Bash →
+//                       ENOENT (Linux) or Errno 22 on Windows → loops
+// A multi-word parenthesised phrase cannot be tokenised as a path or
+// identifier, so clients skip it instead of trying to resolve. Verified
+// with the drift probe (scripts/_agent_drift_probe.py) that previously
+// crashed because sonnet kept calling read_file('<redacted-path>').
+const REDACTED_PATH = '(internal path redacted)';
 
 const PATTERNS = [
   [/\/tmp\/windsurf-workspace(?:\/[^\s"'`<>)}\],*;]*)?/g, REDACTED_PATH],
