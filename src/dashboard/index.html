@@ -4707,6 +4707,42 @@ const App = {
   // new PR lands; the dashboard Credits panel renders straight from this.
   CONTRIBUTORS: [
     {
+      login: 'baily-zhang',
+      pr: 61,
+      weight: 'S+',
+      weightLabel: '第三次出手 + Opus 4.7 多模态体验救星',
+      mergedAt: '2026-04-25',
+      title: 'fix: 修复 Opus 4.7 Claude Code 上下文爆炸',
+      summary: 'Claude Code 走 Opus 4.7 + 图片 + tools 时反代把整个 Claude Code system prompt（含 billing header）+ 工具 fallback + 图片 base64 全塞进 user 文本通道，连续图片轮历史指数膨胀触发 Opus 4.7 prompt-injection 拒答。修法五件事：图片 / 二进制 block 在历史里只留占位符不再嵌 base64；Claude Code 长 system prompt 压缩去除 billing header；Opus 4.7 多模态工具请求禁用 user-message tool fallback（proto 层 SectionOverride 已经 carry 工具）；Opus 4.7 工具请求启用窄范围 cascade reuse + 严格账号绑定避免 retry 全量重放；fingerprint 不再 hash 图片 base64。回归测试覆盖每一条。和 PR #36 / #45 合起来 baily-zhang 已是反代复用机制的实质 maintainer。',
+    },
+    {
+      login: 'abwuge',
+      pr: 58,
+      weight: 'B+',
+      weightLabel: 'Docker 部署关键修复 · 首次贡献',
+      mergedAt: '2026-04-25',
+      title: 'fix: nginx shared memory zone + 缺失的 join import',
+      summary: '新人首次贡献就解了部署死锁。docker-compose 起来后所有 windsurf 容器（windsurf-lb + 三个 API 副本）持续 Restart：nginx upstream 用了 `server windsurf-api:3003 resolve` 动态解析但没配 `zone`，nginx 直接拒绝启动；Node 这边 src/config.js:38 实际调用 `join()` 但顶部 import 漏写，replica-data-dir 路径 hit 时 ReferenceError 进程崩。两处单行修，docker compose 立刻能起。PR 描述里那句"~~这么简单的问题，难道没人用 docker 吗？~~" 本人勿删。',
+    },
+    {
+      login: 'aict666',
+      pr: 54,
+      weight: 'S+',
+      weightLabel: '第四次出手 · 三件事打包修',
+      mergedAt: '2026-04-25',
+      title: 'fix: bring Claude Code tool-call flow back to Anthropic-equivalent behaviour',
+      summary: '一个 PR 解了三个独立 regression。① tool preamble 从 1600 字符瘦身到 330 字符 —— 老版本的 ### Tool / parameters schema: / ```json {…} 形态正是 Claude Code 自家 system prompt 的指纹，出现在 user 槽位时 Opus 4.7 会判 "pasted system prompt" 拒答。② redact 标记升到第 6 代单字符 U+2026 省略号 `…`：第 5 代 redacted internal path 仍被 Opus 塞进 cd redacted internal path && git ... 浪费 2-3 turn；新 marker 0 ASCII word char + 0 shell 元字符 + 训练数据里没 cd … 当真路径的样本，模型不会再当参数用。③ neutralizeCascadeIdentity 加 5 个新 pattern（Cascade is an? AI assistant / As Cascade / Codeium\\'s Cascade / built by Codeium / Cascade\\'s workspace），漏网的 Cascade 自称口吻全部封死。回归套装含 banned-shape regex 锁死未来不会再倒退到含 ASCII 字符的 marker。',
+    },
+    {
+      login: 'aict666',
+      pr: 53,
+      weight: 'S+',
+      weightLabel: '第二次出手 · redact marker shell 安全',
+      mergedAt: '2026-04-24',
+      title: 'fix(#24): redact marker must have no shell metacharacters',
+      summary: '第 4 代 redact marker `(internal path redacted)` 被 Opus 4.7 塞进 `cd (internal path redacted) && git branch -a`，zsh 把 `(…)` 解析成 glob-qualifier 报 `unknown file attribute: i`，模型见到这种诡异错误就 derail。aict666 的根因诊断细到 zsh 的 glob qualifier 词法 —— 一个文件 API 安全的 marker 不一定是 shell 安全的。换成 `redacted internal path`（无 shell 元字符 / 无路径形状），加两条 banned regex 锁死 marker 形状，未来若再出新 marker test 会卡住。',
+    },
+    {
       login: 'aict666',
       pr: 51,
       weight: 'S+',
