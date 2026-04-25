@@ -22,7 +22,7 @@ describe('cacheKey', () => {
     assert.equal(cacheKey(a), cacheKey(b));
   });
 
-  it('strips base64 image data from key', () => {
+  it('includes base64 image fingerprints in key', () => {
     const withImage = {
       model: 'gpt-4o',
       messages: [{ role: 'user', content: [
@@ -37,7 +37,22 @@ describe('cacheKey', () => {
         { type: 'image_url', image_url: { url: 'data:image/png;base64,DIFFERENT' + 'B'.repeat(10000) } },
       ]}],
     };
-    assert.equal(cacheKey(withImage), cacheKey(withDifferentImage));
+    assert.notEqual(cacheKey(withImage), cacheKey(withDifferentImage));
+  });
+
+  it('matches identical image content', () => {
+    const image = 'data:image/png;base64,' + Buffer.from('same-image').toString('base64');
+    const a = { model: 'gpt-4o', messages: [{ role: 'user', content: [{ type: 'text', text: 'describe' }, { type: 'image_url', image_url: { url: image } }] }] };
+    const b = { model: 'gpt-4o', messages: [{ role: 'user', content: [{ type: 'text', text: 'describe' }, { type: 'image_url', image_url: { url: image } }] }] };
+    assert.equal(cacheKey(a), cacheKey(b));
+  });
+
+  it('separates thinking settings', () => {
+    const base = { model: 'gpt-4o', messages: [{ role: 'user', content: 'hi' }] };
+    assert.notEqual(
+      cacheKey({ ...base, thinking: { type: 'enabled' } }),
+      cacheKey({ ...base, thinking: { type: 'disabled' } })
+    );
   });
 });
 

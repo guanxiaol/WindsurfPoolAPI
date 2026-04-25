@@ -862,7 +862,15 @@ const PROBE_CANARIES = [
  *      4.6 series etc.) which don't appear in the enum allowlist, and serves
  *      as a fallback if GetUserStatus fails on this LS/account combo.
  */
+let _probeInFlight = false;
+
 export async function probeAccount(id) {
+  if (_probeInFlight) {
+    log.info(`Probe skipped for ${id}: another probe is already running`);
+    return null;
+  }
+  _probeInFlight = true;
+  try {
   const account = accounts.find(a => a.id === id);
   if (!account) return null;
 
@@ -978,6 +986,9 @@ export async function probeAccount(id) {
   saveAccounts();
   log.info(`Probe complete for ${account.id}: tier=${account.tier}${status ? ` plan="${status.planName}"` : ''}`);
   return { tier: account.tier, capabilities: account.capabilities };
+  } finally {
+    _probeInFlight = false;
+  }
 }
 
 export function getAccountCount() {
@@ -993,6 +1004,32 @@ export function getAccountCount() {
 export function validateApiKey(key) {
   if (!config.apiKey) return true;
   return key === config.apiKey;
+}
+
+export function shouldEmitNoAuthWarning(bindHost, hasKey) {
+  if (hasKey) return false;
+  const host = String(bindHost || '').trim().toLowerCase();
+  if (!host || host === '0.0.0.0' || host === '::') return true;
+  return !(host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]');
+}
+
+export function emitNoAuthWarnings(bindHost = '0.0.0.0') {
+  const apiOpen = shouldEmitNoAuthWarning(bindHost, !!config.apiKey);
+  const dashboardOpen = shouldEmitNoAuthWarning(bindHost, !!(config.dashboardPassword || config.apiKey));
+  if (!apiOpen && !dashboardOpen) return;
+  const lines = [
+    '+------------------------------------------------------------------+',
+    '| WARNING: AUTHENTICATION IS NOT CONFIGURED                        |',
+    '| 警告：当前服务未配置访问认证                                      |',
+    '|                                                                  |',
+    '| This server is listening beyond localhost. Set API_KEY before     |',
+    '| exposing REST APIs, and set DASHBOARD_PASSWORD for dashboard      |',
+    '| write operations.                                                |',
+    '| 服务正在非本机地址监听。公网/内网暴露前请配置 API_KEY，并为        |',
+    '| Dashboard 写接口配置 DASHBOARD_PASSWORD。                         |',
+    '+------------------------------------------------------------------+',
+  ];
+  for (const line of lines) log.warn(line);
 }
 
 // ─── Firebase token refresh ──────────────────────────────────

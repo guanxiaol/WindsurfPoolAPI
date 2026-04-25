@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { fingerprintBefore, fingerprintAfter, checkout, checkin, poolStats } from '../src/conversation-pool.js';
+import { fingerprintBefore, fingerprintAfter, checkout, checkin, poolStats, poolClear } from '../src/conversation-pool.js';
 
 describe('fingerprintBefore', () => {
   it('returns null for single-message conversations', () => {
@@ -84,6 +84,33 @@ describe('fingerprintAfter', () => {
 });
 
 describe('checkout / checkin', () => {
+  it('isolates identical prompt fingerprints by caller', () => {
+    poolClear();
+    const msgs = [
+      { role: 'user', content: 'hello' },
+      { role: 'assistant', content: 'hi' },
+      { role: 'user', content: 'next' },
+    ];
+    const fpA = fingerprintBefore(msgs, 'claude-opus-4.6', 'caller-a');
+    const fpB = fingerprintBefore(msgs, 'claude-opus-4.6', 'caller-b');
+    assert.notEqual(fpA, fpB);
+    checkin(fpA, { cascadeId: 'c-a', sessionId: 's-a', lsPort: 42100, apiKey: 'key-a' }, 'caller-a');
+    assert.equal(checkout(fpB, 'caller-b'), null);
+    assert.equal(checkout(fpA, 'caller-a')?.cascadeId, 'c-a');
+  });
+
+  it('reuses for the same caller and prompt trajectory', () => {
+    poolClear();
+    const msgs = [
+      { role: 'user', content: 'hello' },
+      { role: 'assistant', content: 'hi' },
+      { role: 'user', content: 'next' },
+    ];
+    const fp = fingerprintBefore(msgs, 'claude-opus-4.6', 'caller-a');
+    checkin(fp, { cascadeId: 'c-same', sessionId: 's-same', lsPort: 42100, apiKey: 'key-a' }, 'caller-a');
+    assert.equal(checkout(fp, 'caller-a')?.cascadeId, 'c-same');
+  });
+
   it('returns null on miss', () => {
     assert.equal(checkout('nonexistent-fp'), null);
   });

@@ -58,6 +58,21 @@ function proxyUrl(proxy) {
   return `http://${auth}${proxy.host}:${proxy.port || 8080}`;
 }
 
+export function redactProxyUrl(urlOrProxy) {
+  if (!urlOrProxy) return 'none';
+  if (typeof urlOrProxy === 'object') {
+    const host = urlOrProxy.host || '';
+    const port = urlOrProxy.port || 8080;
+    return `${host}:${port}${urlOrProxy.username ? ' (auth=true)' : ''}`;
+  }
+  try {
+    const u = new URL(String(urlOrProxy));
+    return `${u.hostname}:${u.port || (u.protocol === 'https:' ? '443' : '80')}${u.username || u.password ? ' (auth=true)' : ''}`;
+  } catch {
+    return String(urlOrProxy).replace(/\/\/([^:@/\s]+):([^@/\s]*)@/g, '//***:***@');
+  }
+}
+
 function isPortInUse(port) {
   return new Promise((resolve) => {
     const sock = net.createConnection({ port, host: '127.0.0.1' }, () => {
@@ -168,7 +183,7 @@ export async function ensureLs(proxy = null) {
       );
     }
 
-    log.info(`Starting LS instance key=${key} port=${port} proxy=${pUrl || 'none'}`);
+    log.info(`Starting LS instance key=${key} port=${port} proxy=${redactProxyUrl(pUrl)}`);
 
     const proc = spawn(_binaryPath, args, {
       stdio: ['pipe', 'pipe', 'pipe'],

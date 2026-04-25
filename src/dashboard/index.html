@@ -2734,7 +2734,7 @@ const App = {
           <table style="background:transparent">
             <tr><td style="color:var(--text-muted);width:120px">${I18n.t('loginResult.fields.email')}</td><td>${this.esc(r.email)}</td></tr>
             <tr><td style="color:var(--text-muted)">${I18n.t('loginResult.fields.name')}</td><td>${this.esc(r.name || '-')}</td></tr>
-            <tr><td style="color:var(--text-muted)">${I18n.t('loginResult.fields.apiKey')}</td><td><code class="break-all">${this.esc(r.apiKey)}</code></td></tr>
+            <tr><td style="color:var(--text-muted)">${I18n.t('loginResult.fields.apiKey')}</td><td><code class="break-all">${this.esc(r.apiKey_masked || r.apiKey || '')}</code></td></tr>
             ${r.account ? `<tr><td style="color:var(--text-muted)">${I18n.t('loginResult.fields.accountId')}</td><td><code>${r.account.id}</code> <span class="badge active">${r.account.status}</span></td></tr>` : ''}
           </table>
         </div>`);
@@ -2769,7 +2769,7 @@ const App = {
                   <td>${this.esc(r.email || '-')}</td>
                   <td><span class="badge ${r.success ? 'active' : 'error'}">${r.success ? I18n.t('batch.success') : I18n.t('batch.fail')}</span></td>
                   <td class="text-sm">${r.success
-                    ? `<span class="break-all"><code>${this.esc(r.apiKey ? r.apiKey.slice(0, 16) + '...' : '-')}</code>${r.account ? ` · ${I18n.t('table.header.account')} ${this.esc(r.account.id)}` : ''}</span>`
+                    ? `<span class="break-all"><code>${this.esc(r.apiKey_masked || (r.apiKey ? r.apiKey.slice(0, 16) + '...' : '-'))}</code>${r.account ? ` · ${I18n.t('table.header.account')} ${this.esc(r.account.id)}` : ''}</span>`
                     : `<span style="color:var(--error)">${this.esc(r.error || I18n.t('error.unknown'))}</span>`}</td>
                 </tr>
               `).join('')}
@@ -2835,7 +2835,7 @@ const App = {
       const r = await this.api('POST', '/windsurf-login', { email, password, proxy, autoAdd });
       if (r.success) {
         entry.status = 'success';
-        entry.apiKey = r.apiKey?.slice(0, 16) + '...';
+        entry.apiKey = r.apiKey_masked || (r.apiKey?.slice(0, 16) + '...');
         this.renderSingleWindsurfLoginResult(r, autoAdd);
         this.toast(autoAdd ? I18n.t('toast.loginSuccessAdded') : I18n.t('toast.loginSuccess'), 'success');
         this.loadAccounts();
@@ -2888,7 +2888,7 @@ const App = {
           email: item.email,
           proxy: this.getWindsurfProxyLabel(proxy),
           status: item.success ? 'success' : `error: ${item.error || 'unknown'}`,
-          apiKey: item.success && item.apiKey ? item.apiKey.slice(0, 16) + '...' : undefined,
+          apiKey: item.success ? (item.apiKey_masked || (item.apiKey ? item.apiKey.slice(0, 16) + '...' : undefined)) : undefined,
         })));
       this.toast(I18n.t('batch.importComplete', {success: r.successCount || 0, fail: r.failCount || 0}), (r.failCount || 0) ? 'info' : 'success');
       if ((r.successCount || 0) > 0) {

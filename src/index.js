@@ -1,12 +1,15 @@
 // Logger must be imported first to patch log functions before other modules use them
 import './dashboard/logger.js';
-import { initAuth, isAuthenticated, saveAccountsSync } from './auth.js';
+import { emitNoAuthWarnings, initAuth, isAuthenticated, saveAccountsSync } from './auth.js';
 import { startLanguageServer, waitForReady, isLanguageServerRunning, stopLanguageServer } from './langserver.js';
 import { startServer } from './server.js';
 import { config, log } from './config.js';
 import { existsSync } from 'fs';
 import { execSync } from 'child_process';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { VERSION, BRAND } from './version.js';
+import { abortActiveSse } from './sse-registry.js';
 export { VERSION, BRAND };
 
 async function main() {
@@ -21,6 +24,7 @@ async function main() {
 `;
   console.log(banner);
   console.log(`  OpenAI-compatible proxy for Windsurf — by dwgx1337\n`);
+  emitNoAuthWarnings('0.0.0.0');
 
   // Start language server binary.
   // Auto-install if missing — users repeatedly miss the manual install step
@@ -101,6 +105,8 @@ async function main() {
     shuttingDown = true;
     const inflight = server.getActiveRequests?.() ?? '?';
     log.info(`${signal} received — draining ${inflight} in-flight requests (up to 30s)...`);
+    const abortedSse = abortActiveSse('server shutting down');
+    if (abortedSse) log.warn(`Aborted ${abortedSse} active SSE stream(s): server shutting down`);
     if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
     server.close(() => {
       log.info('HTTP server closed, flushing state + stopping language server');

@@ -139,6 +139,17 @@ describe('chatToResponse', () => {
     assert.equal(response.output[1].name, 'Bash');
     assert.equal(response.output[1].arguments, '{"command":"pwd"}');
   });
+
+  it('maps non-stream reasoning_content to a reasoning output item', () => {
+    const response = chatToResponse({
+      created: 123,
+      model: 'claude-sonnet-4.6',
+      choices: [{ index: 0, message: { role: 'assistant', reasoning_content: 'thinking', content: 'answer' }, finish_reason: 'stop' }],
+    }, 'claude-sonnet-4.6', 'resp_test', 'msg_test');
+    assert.equal(response.output[0].type, 'reasoning');
+    assert.equal(response.output[0].summary[0].text, 'thinking');
+    assert.equal(response.output[1].type, 'message');
+  });
 });
 
 describe('handleResponses streaming', () => {
@@ -238,8 +249,29 @@ describe('handleResponses streaming', () => {
     const res = fakeRes();
     await result.handler(res);
     const events = parseEvents(res.body);
-    assert.deepEqual(events.map(e => e.event), ['response.created', 'error']);
+    assert.deepEqual(events.map(e => e.event), ['response.created', 'response.failed']);
     assert.equal(events[1].data.error.message, 'boom');
     assert.equal(res.writableEnded, true);
+  });
+
+  it('translates chat reasoning_content deltas to Responses reasoning events', async () => {
+    const result = await handleResponses({ model: 'claude-sonnet-4.6', input: 'Hello', stream: true }, {
+      async handleChatCompletions(body) {
+        return {
+          status: 200,
+          stream: true,
+          async handler(res) {
+            res.write(chatChunk({ id: 'chat_1', created: 123, model: body.model, choices: [{ index: 0, delta: { reasoning_content: 'plan' }, finish_reason: null }] }));
+            res.write(chatChunk({ id: 'chat_1', created: 123, model: body.model, choices: [{ index: 0, delta: { content: 'done' }, finish_reason: null }] }));
+            res.end('data: [DONE]\n\n');
+          },
+        };
+      },
+    });
+    const res = fakeRes();
+    await result.handler(res);
+    const events = parseEvents(res.body);
+    assert.ok(events.some(e => e.event === 'response.reasoning_summary_text.delta' && e.data.delta === 'plan'));
+    assert.equal(events.at(-1).data.output[0].type, 'reasoning');
   });
 });

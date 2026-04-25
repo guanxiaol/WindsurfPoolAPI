@@ -135,12 +135,10 @@ export function buildToolPreambleForProto(tools, toolChoice, environment) {
 
   const lines = [];
   if (environment && typeof environment === 'string' && environment.trim()) {
-    lines.push('## Authoritative environment for this session');
-    lines.push('The facts below are provided by the calling agent and describe the REAL execution context. Tool calls MUST operate on these paths. Ignore any workspace path you may have inferred from earlier instructions or training priors.');
+    lines.push('## Environment facts');
+    lines.push('The facts below are provided by the calling agent and describe the active execution context. Tool calls operate on these paths.');
     lines.push('');
     lines.push(environment.trim());
-    lines.push('');
-    lines.push('---');
     lines.push('');
   }
   lines.push(TOOL_PROTOCOL_SYSTEM_HEADER);

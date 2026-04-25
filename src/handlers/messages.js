@@ -248,6 +248,10 @@ class AnthropicStreamTranslator {
   }
 
   processChunk(chunk) {
+    if (chunk.error) {
+      this.error(chunk.error);
+      return;
+    }
     this.startMessage();
     const choice = chunk.choices?.[0];
     if (choice) {
@@ -281,6 +285,19 @@ class AnthropicStreamTranslator {
       },
     });
     this.send('message_stop', { type: 'message_stop' });
+  }
+
+  error(err) {
+    if (this.messageStopped) return;
+    this.messageStopped = true;
+    this.closeCurrentBlock();
+    this.send('error', {
+      type: 'error',
+      error: {
+        type: err?.type || 'api_error',
+        message: err?.message || 'Upstream stream error',
+      },
+    });
   }
 
   // SSE parser — handleChatCompletions writes `data: {...}\n\n` frames;
@@ -370,14 +387,15 @@ function createCaptureRes(translator, realRes) {
 
 // ─── Main entry ───────────────────────────────────────────────
 
-export async function handleMessages(body) {
+export async function handleMessages(body, context = {}) {
   const msgId = genMsgId();
   const requestedModel = body.model || 'claude-sonnet-4.6';
   const wantStream = !!body.stream;
   const openaiBody = anthropicToOpenAI(body);
+  const chatHandler = context.handleChatCompletions || handleChatCompletions;
 
   if (!wantStream) {
-    const result = await handleChatCompletions({ ...openaiBody, stream: false });
+    const result = await chatHandler({ ...openaiBody, stream: false }, context);
     if (result.status !== 200) {
       return {
         status: result.status,
@@ -396,7 +414,7 @@ export async function handleMessages(body) {
   // Streaming path — ask handleChatCompletions for its streaming handler and
   // point its writes at our translator shim. This lets the upstream Cascade
   // poll loop drive the downstream SSE in real time — no buffer-then-replay.
-  const streamResult = await handleChatCompletions({ ...openaiBody, stream: true });
+  const streamResult = await chatHandler({ ...openaiBody, stream: true }, context);
 
   if (!streamResult.stream) {
     // The OpenAI path returned a non-stream error (e.g. 403 model_not_entitled)
@@ -436,10 +454,7 @@ export async function handleMessages(body) {
         await streamResult.handler(captureRes);
       } catch (e) {
         log.error(`Messages stream error: ${e.message}`);
-        if (!translator.messageStarted) {
-          translator.startMessage();
-        }
-        translator.finish();
+        translator.error({ type: 'api_error', message: e.message });
       }
 
       if (!realRes.writableEnded) realRes.end();

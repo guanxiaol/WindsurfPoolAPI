@@ -123,14 +123,14 @@ describe('buildToolPreambleForProto with environment override', () => {
     const env = '- Working directory: /Users/jaxyu/IdeaProjects/flux-panel\n- Platform: darwin';
     const out = buildToolPreambleForProto(tools, 'auto', env);
     // Env block must come BEFORE the protocol header
-    const envIdx = out.indexOf('## Authoritative environment for this session');
+    const envIdx = out.indexOf('## Environment facts');
     const headerIdx = out.indexOf('You have access to the following functions');
     assert.ok(envIdx >= 0, 'env header must be present');
     assert.ok(headerIdx >= 0, 'protocol header must be present');
     assert.ok(envIdx < headerIdx, 'env block must come BEFORE the protocol header');
     assert.match(out, /\/Users\/jaxyu\/IdeaProjects\/flux-panel/);
-    // Must explicitly tell the model to prefer THIS over any prior assumption
-    assert.match(out, /Ignore any workspace path you may have inferred/i);
+    assert.match(out, /active execution context/i);
+    assert.doesNotMatch(out, /ignore|for this request only|---/i);
   });
 
   it('omits the environment block when env is empty (back-compat with PR #54 shape)', () => {

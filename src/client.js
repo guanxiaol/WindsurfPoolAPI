@@ -148,6 +148,10 @@ const CASCADE_TIMEOUTS = {
   stallRetryMinText: positiveIntEnv('CASCADE_STALL_RETRY_MIN_TEXT', 300),
 };
 
+export function shouldColdStall({ elapsed, coldStallMs, sawActive, sawText, totalThinking, toolCallCount }) {
+  return elapsed > coldStallMs && sawActive && !sawText && (totalThinking || 0) === 0 && (toolCallCount || 0) === 0;
+}
+
 // ── Fake workspace scaffold ────────────────────────────────
 // A real Windsurf IDE always has a workspace directory that the LS scans
 // for git state, file tree, etc. The reverse proxy previously registered
@@ -247,6 +251,7 @@ export class WindsurfClient {
                 const err = new Error(parsed.text.trim());
                 // Mark model-level errors so they don't count against the account
                 err.isModelError = /permission_denied|failed_precondition/.test(parsed.text);
+                if (err.isModelError) err.kind = 'model_error';
                 done = true;
                 reject(err);
                 return;
@@ -603,6 +608,7 @@ export class WindsurfClient {
             log.warn('Cascade error step', { errorText: step.errorText.trim(), trail });
             const err = new Error(step.errorText.trim());
             err.isModelError = true;
+            err.kind = 'model_error';
             throw err;
           }
         }
@@ -616,11 +622,12 @@ export class WindsurfClient {
         const promptChars = typeof text === 'string' ? text.length : inputChars;
         const effectiveChars = promptChars + (toolPreamble?.length ?? 0);
         const coldStallMs = Math.min(maxWait, CASCADE_TIMEOUTS.coldStallBaseMs + Math.floor(effectiveChars / 1500) * 5_000);
-        if (elapsed > coldStallMs && sawActive && !sawText && seenToolCallIds.size === 0) {
+        if (shouldColdStall({ elapsed, coldStallMs, sawActive, sawText, totalThinking, toolCallCount: seenToolCallIds.size })) {
           log.warn(`Cascade cold stall: ${elapsed}ms active without any text or tool call (threshold=${coldStallMs}ms, promptChars=${promptChars}), bailing`);
           endReason = 'stall_cold';
           const err = new Error(`Cascade planner stalled — no output after ${Math.round(coldStallMs / 1000)}s`);
           err.isModelError = true;
+          err.kind = 'transient_stall';
           throw err;
         }
 
@@ -713,6 +720,7 @@ export class WindsurfClient {
             endReason = 'stall_warm_retry';
             const err = new Error('Cascade planner stalled after preamble — no progress for 25s');
             err.isModelError = true;
+            err.kind = 'transient_stall';
             throw err;
           }
           log.warn('Cascade warm stall (accepting partial)', diag);

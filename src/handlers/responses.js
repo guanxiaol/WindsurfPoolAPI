@@ -142,6 +142,15 @@ function textMessageItem(id, text, status = 'completed') {
   };
 }
 
+function reasoningItem(id, text, status = 'completed') {
+  return {
+    type: 'reasoning',
+    id,
+    status,
+    summary: text ? [{ type: 'summary_text', text }] : [],
+  };
+}
+
 function functionCallItem(toolCall, status = 'completed') {
   return {
     type: 'function_call',
@@ -158,7 +167,9 @@ export function chatToResponse(chatBody, requestedModel, responseId = genRespons
   const message = choice.message || {};
   const finishReason = choice.finish_reason || 'stop';
   const text = message.content || '';
-  const output = [textMessageItem(msgId, text)];
+  const output = [];
+  if (message.reasoning_content) output.push(reasoningItem('rs_' + msgId.slice(4), message.reasoning_content));
+  output.push(textMessageItem(msgId, text));
   for (const tc of (message.tool_calls || [])) output.push(functionCallItem(tc));
 
   return {
@@ -187,6 +198,11 @@ class ResponsesStreamTranslator {
     this.messageStarted = false;
     this.textPartStarted = false;
     this.messageDone = false;
+    this.reasoningId = 'rs_' + randomUUID().replace(/-/g, '').slice(0, 24);
+    this.reasoningOutputIndex = null;
+    this.reasoningStarted = false;
+    this.reasoningText = '';
+    this.reasoningDone = false;
     this.nextOutputIndex = 0;
     this.outputItems = [];
     this.toolCalls = new Map();
@@ -224,12 +240,46 @@ class ResponsesStreamTranslator {
     const choice = chunk.choices?.[0];
     if (choice) {
       const delta = choice.delta || {};
+      if (delta.reasoning_content) this.emitReasoningDelta(delta.reasoning_content);
       if (delta.content) this.emitTextDelta(delta.content);
       if (Array.isArray(delta.tool_calls)) {
         for (const tc of delta.tool_calls) this.emitToolCallDelta(tc);
       }
     }
     if (chunk.usage) this.finalUsage = chunk.usage;
+  }
+
+  emitReasoningDelta(text) {
+    if (!text) return;
+    if (!this.reasoningStarted) {
+      this.reasoningStarted = true;
+      this.reasoningOutputIndex = this.nextOutputIndex++;
+      this.send('response.output_item.added', {
+        output_index: this.reasoningOutputIndex,
+        item: reasoningItem(this.reasoningId, '', 'in_progress'),
+      });
+    }
+    this.reasoningText += text;
+    this.send('response.reasoning_summary_text.delta', {
+      item_id: this.reasoningId,
+      output_index: this.reasoningOutputIndex,
+      summary_index: 0,
+      delta: text,
+    });
+  }
+
+  finishReasoning() {
+    if (!this.reasoningStarted || this.reasoningDone) return;
+    this.reasoningDone = true;
+    this.send('response.reasoning_summary_text.done', {
+      item_id: this.reasoningId,
+      output_index: this.reasoningOutputIndex,
+      summary_index: 0,
+      text: this.reasoningText,
+    });
+    const complete = reasoningItem(this.reasoningId, this.reasoningText);
+    this.send('response.output_item.done', { output_index: this.reasoningOutputIndex, item: complete });
+    this.outputItems[this.reasoningOutputIndex] = complete;
   }
 
   ensureMessage() {
@@ -338,6 +388,7 @@ class ResponsesStreamTranslator {
     if (this.finished) return;
     this.finished = true;
     this.start();
+    this.finishReasoning();
     this.finishToolCalls();
     this.finishMessage();
     this.send('response.completed', {
@@ -350,10 +401,12 @@ class ResponsesStreamTranslator {
     if (this.finished) return;
     this.finished = true;
     this.start();
-    this.send('error', {
+    this.send('response.failed', {
+      ...this.responseBase('failed', this.outputItems.filter(Boolean)),
       error: {
         message: err?.message || 'Upstream stream error',
         type: err?.type || 'upstream_error',
+        code: err?.code || null,
       },
     });
   }
@@ -370,7 +423,12 @@ class ResponsesStreamTranslator {
         const payload = line.slice(6);
         if (payload === '[DONE]') continue;
         try {
-          this.processChunk(JSON.parse(payload));
+          const parsed = JSON.parse(payload);
+          if (parsed.error) {
+            this.error(parsed.error);
+          } else {
+            this.processChunk(parsed);
+          }
         } catch (e) {
           log.warn(`Responses SSE parse error: ${e.message}`);
         }
@@ -433,17 +491,18 @@ function createCaptureRes(translator, realRes) {
 
 export async function handleResponses(body, deps = {}) {
   const chatHandler = deps.handleChatCompletions || handleChatCompletions;
+  const context = deps.context || {};
   const responseId = genResponseId();
   const requestedModel = body.model || 'claude-sonnet-4.6';
   const chatBody = responsesToChat(body);
 
   if (!body.stream) {
-    const result = await chatHandler({ ...chatBody, stream: false });
+    const result = await chatHandler({ ...chatBody, stream: false }, context);
     if (result.status !== 200) return result;
     return { status: 200, body: chatToResponse(result.body, requestedModel, responseId) };
   }
 
-  const streamResult = await chatHandler({ ...chatBody, stream: true });
+  const streamResult = await chatHandler({ ...chatBody, stream: true }, context);
   if (!streamResult.stream) return streamResult;
 
   return {

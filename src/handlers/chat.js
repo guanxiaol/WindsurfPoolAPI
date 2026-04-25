@@ -3,7 +3,7 @@
  * Routes to RawGetChatMessage (legacy) or Cascade (premium) based on model type.
  */
 
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { WindsurfClient } from '../client.js';
 import { getApiKey, acquireAccountByKey, releaseAccount, getAccountAvailability, reportError, reportSuccess, markRateLimited, reportInternalError, updateCapability, getAccountList, isAllRateLimited } from '../auth.js';
 import { resolveModel, getModelInfo } from '../models.js';
@@ -23,6 +23,7 @@ import {
   buildToolPreambleForProto,
 } from './tool-emulation.js';
 import { sanitizeText, sanitizeToolCall, PathSanitizeStream } from '../sanitize.js';
+import { registerSseController } from '../sse-registry.js';
 
 const HEARTBEAT_MS = 15_000;
 const QUEUE_RETRY_MS = 1_000;
@@ -44,6 +45,32 @@ async function internalErrorBackoff(retryIdx) {
 
 function upstreamTransientErrorMessage(model, triedCount) {
   return `${model} 上游 Windsurf Cascade 服务瞬态故障：已在 ${triedCount} 个账号上重试都收到 internal_error。这是上游服务端的瞬时问题，反代无法绕过，建议 30-60 秒后重试。`;
+}
+
+function shortHash(text) {
+  return createHash('sha256').update(String(text || '')).digest('hex').slice(0, 16);
+}
+
+export function redactRequestLogText(text) {
+  return String(text || '')
+    .replace(/sk-[A-Za-z0-9_-]{20,}/g, 'sk-***')
+    .replace(/(?:ant-api\d{2}|sk-ant-api\d{2})-[A-Za-z0-9_-]{20,}/g, 'sk-ant-***')
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, 'jwt-***')
+    .replace(/\bAKIA[0-9A-Z]{16}\b/g, 'AKIA***')
+    .replace(/\b(cookie|set-cookie)\s*:\s*[^\n\r]+/gi, '$1: ***')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '***@***');
+}
+
+function requestLogSummary(text, limit = 220) {
+  const raw = String(text || '');
+  if (process.env.DEBUG_REQUEST_BODIES === '1') {
+    return `head="${redactRequestLogText(raw.slice(0, limit)).replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
+  }
+  return `len=${raw.length} hash=${shortHash(raw)}`;
+}
+
+export function chatStreamError(message, type = 'upstream_error', code = null) {
+  return { error: { message: sanitizeText(message || 'Upstream stream error'), type, code } };
 }
 
 /**
@@ -390,7 +417,7 @@ async function waitForAccount(tried, signal, maxWaitMs = QUEUE_MAX_WAIT_MS, mode
   return acct;
 }
 
-export async function handleChatCompletions(body) {
+export async function handleChatCompletions(body, context = {}) {
   const reqId = Math.random().toString(36).slice(2, 8);
   const {
     model: reqModel,
@@ -401,6 +428,7 @@ export async function handleChatCompletions(body) {
     response_format,
   } = body;
   let messages = body.messages;
+  const callerKey = context.callerKey || body.__callerKey || '';
 
   // Probe diagnostics: dump compact request shape for every call, plus a
   // tail of the last user turn. Keeps us able to see how third-party
@@ -419,13 +447,12 @@ export async function handleChatCompletions(body) {
           : Array.isArray(c) ? c.filter(p => p?.type === 'text').map(p => p.text || '').join(' ') : '';
       }
     }
-    const tail = lastUserText.length > 140 ? '…' + lastUserText.slice(-140) : lastUserText;
-    log.info(`Probe[${reqId}]: model=${reqModel} stream=${!!stream} rf=${response_format?.type || 'none'} tools=${Array.isArray(tools) ? tools.length : 0} reasoning=${body.reasoning_effort || body.thinking?.type || 'none'} ctypes=[${[...contentTypes].join(',')}] turns=${messages?.length || 0} lastUser="${tail.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`);
+    log.info(`Probe[${reqId}]: model=${reqModel} stream=${!!stream} rf=${response_format?.type || 'none'} tools=${Array.isArray(tools) ? tools.length : 0} reasoning=${body.reasoning_effort || body.thinking?.type || 'none'} ctypes=[${[...contentTypes].join(',')}] turns=${messages?.length || 0} lastUser=${requestLogSummary(lastUserText, 140)}`);
     // Also dump first-user / system content so we can see preambles.
     for (let mi = 0; mi < Math.min((messages || []).length, 3); mi++) {
       const m = messages[mi];
       const c = typeof m?.content === 'string' ? m.content : Array.isArray(m?.content) ? m.content.map(p => p?.type === 'text' ? p.text : `[${p?.type}]`).join('|') : '';
-      log.info(`Probe[${reqId}] msg[${mi}] role=${m?.role} len=${c.length} head="${c.slice(0, 220).replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`);
+      log.info(`Probe[${reqId}] msg[${mi}] role=${m?.role} ${requestLogSummary(c)}`);
     }
   } catch {}
 
@@ -630,7 +657,7 @@ export async function handleChatCompletions(body) {
   const ckey = cacheKey(body);
 
   if (stream) {
-    return streamResponse(chatId, created, displayModel, modelKey, messages, cascadeMessages, modelEnum, modelUid, useCascade, ckey, emulateTools, toolPreamble, reqId, wantJson);
+    return streamResponse(chatId, created, displayModel, modelKey, messages, cascadeMessages, modelEnum, modelUid, useCascade, ckey, emulateTools, toolPreamble, reqId, wantJson, callerKey);
   }
 
   // ── Local response cache (exact body match) ─────────────
@@ -660,8 +687,8 @@ export async function handleChatCompletions(body) {
   const reuseEnabled = shouldUseCascadeReuse({ useCascade, emulateTools, modelKey })
     && (isExperimentalEnabled('cascadeConversationReuse') || shouldForceCascadeReuse({ emulateTools, modelKey }));
   const strictReuse = shouldUseStrictCascadeReuse({ emulateTools, modelKey });
-  const fpBefore = reuseEnabled ? fingerprintBefore(messages, modelKey) : null;
-  let reuseEntry = reuseEnabled ? poolCheckout(fpBefore) : null;
+  const fpBefore = reuseEnabled ? fingerprintBefore(messages, modelKey, callerKey) : null;
+  let reuseEntry = reuseEnabled ? poolCheckout(fpBefore, callerKey) : null;
   let checkedOutReuseEntry = reuseEntry;
   if (reuseEntry) log.info(`Chat[${reqId}]: reuse HIT cascade=${reuseEntry.cascadeId.slice(0, 8)} model=${displayModel}`);
 
@@ -697,7 +724,7 @@ export async function handleChatCompletions(body) {
           if (strictReuse && checkedOutReuseEntry && fpBefore) {
             const availability = getAccountAvailability(checkedOutReuseEntry.apiKey, modelKey);
             const retryAfterMs = strictReuseRetryMs(availability);
-            poolCheckin(fpBefore, checkedOutReuseEntry);
+            poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
             log.info(`Chat[${reqId}]: strict reuse preserved cascade; owner unavailable reason=${availability.reason}`);
             return {
               status: 429,
@@ -734,7 +761,7 @@ export async function handleChatCompletions(body) {
           if (strictReuse && checkedOutReuseEntry && fpBefore && checkedOutReuseEntry.apiKey === acct.apiKey) {
             const availability = getAccountAvailability(acct.apiKey, modelKey);
             const retryAfterMs = strictReuseRetryMs(availability);
-            poolCheckin(fpBefore, checkedOutReuseEntry);
+            poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
             log.info(`Chat[${reqId}]: strict reuse preserved cascade after preflight rate limit`);
             return {
               status: 429,
@@ -775,7 +802,7 @@ export async function handleChatCompletions(body) {
     const result = await nonStreamResponse(
       client, chatId, created, displayModel, modelKey, messages, cascadeMessages, modelEnum, modelUid,
       useCascade, acct.apiKey, ckey,
-      reuseEnabled ? { reuseEntry, lsPort: ls.port, apiKey: acct.apiKey } : null,
+      reuseEnabled ? { reuseEntry, lsPort: ls.port, apiKey: acct.apiKey, callerKey } : null,
       emulateTools, toolPreamble, wantJson,
     );
     if (result.status === 200) return result;
@@ -787,7 +814,7 @@ export async function handleChatCompletions(body) {
       if (strictReuse && checkedOutReuseEntry && fpBefore && checkedOutReuseEntry.apiKey === acct.apiKey) {
         const availability = getAccountAvailability(acct.apiKey, modelKey);
         const retryAfterMs = strictReuseRetryMs(availability);
-        poolCheckin(fpBefore, checkedOutReuseEntry);
+        poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
         log.info(`Chat[${reqId}]: strict reuse preserved cascade after rate limit`);
         return {
           status: 429,
@@ -835,7 +862,7 @@ export async function handleChatCompletions(body) {
   // see from lastErr.
   if (internalCount > 0 && tried.length > 0 && internalCount >= tried.length) {
     if (checkedOutReuseEntry && fpBefore) {
-      poolCheckin(fpBefore, checkedOutReuseEntry);
+      poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
       log.info(`Chat[${reqId}]: restored checked-out cascade after all-internal-error chain`);
     }
     log.error(`Chat[${reqId}]: ${tried.length}/${tried.length} accounts hit upstream_internal_error — surfacing upstream_transient_error`);
@@ -849,7 +876,7 @@ export async function handleChatCompletions(body) {
     const rl = isAllRateLimited(modelKey);
     if (rl.allLimited) {
       if (checkedOutReuseEntry && fpBefore) {
-        poolCheckin(fpBefore, checkedOutReuseEntry);
+        poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
         log.info(`Chat[${reqId}]: restored checked-out cascade after rate limit`);
       }
       const retryAfterSec = Math.ceil(rl.retryAfterMs / 1000);
@@ -857,7 +884,7 @@ export async function handleChatCompletions(body) {
     }
   }
   if (checkedOutReuseEntry && fpBefore) {
-    poolCheckin(fpBefore, checkedOutReuseEntry);
+    poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
     log.info(`Chat[${reqId}]: restored checked-out cascade after failed request`);
   }
   return lastErr || { status: 503, body: { error: { message: 'No active accounts available', type: 'pool_exhausted' } } };
@@ -921,7 +948,7 @@ async function nonStreamResponse(client, id, created, model, modelKey, messages,
     // Check the cascade back into the pool under the *post-turn* fingerprint
     // so the next request in the same conversation can resume it.
     if (poolCtx && cascadeMeta?.cascadeId && (allText || toolCalls.length)) {
-      const fpAfter = fingerprintAfter(messages, modelKey);
+      const fpAfter = fingerprintAfter(messages, modelKey, poolCtx.callerKey || '');
       poolCheckin(fpAfter, {
         cascadeId: cascadeMeta.cascadeId,
         sessionId: cascadeMeta.sessionId,
@@ -930,7 +957,7 @@ async function nonStreamResponse(client, id, created, model, modelKey, messages,
         stepOffset: Number.isFinite(cascadeMeta.stepOffset) ? cascadeMeta.stepOffset : poolCtx.reuseEntry?.stepOffset,
         generatorOffset: Number.isFinite(cascadeMeta.generatorOffset) ? cascadeMeta.generatorOffset : poolCtx.reuseEntry?.generatorOffset,
         createdAt: poolCtx.reuseEntry?.createdAt,
-      });
+      }, poolCtx.callerKey || '');
     }
 
     reportSuccess(apiKey);
@@ -982,9 +1009,9 @@ async function nonStreamResponse(client, id, created, model, modelKey, messages,
     const isRateLimit = /rate limit|rate_limit|too many requests|quota/i.test(err.message);
     const isInternal = /internal error occurred.*error id/i.test(err.message);
     if (isAuthFail) reportError(apiKey);
-    if (isRateLimit) { markRateLimited(apiKey, rateLimitCooldownMs(err.message), modelKey); err.isRateLimit = true; err.isModelError = true; }
-    if (isInternal) { reportInternalError(apiKey); err.isModelError = true; }
-    if (err.isModelError && !isRateLimit && !isInternal) {
+    if (isRateLimit) { markRateLimited(apiKey, rateLimitCooldownMs(err.message), modelKey); err.isRateLimit = true; err.isModelError = true; err.kind ||= 'model_error'; }
+    if (isInternal) { reportInternalError(apiKey); err.isModelError = true; err.kind ||= 'transient_stall'; }
+    if (err.isModelError && err.kind !== 'transient_stall' && !isRateLimit && !isInternal) {
       updateCapability(apiKey, modelKey, false, 'model_error');
     }
     recordRequest(model, false, Date.now() - startTime, apiKey);
@@ -1028,7 +1055,7 @@ async function nonStreamResponse(client, id, created, model, modelKey, messages,
   }
 }
 
-function streamResponse(id, created, model, modelKey, messages, cascadeMessages, modelEnum, modelUid, useCascade, ckey, emulateTools, toolPreamble, reqId, wantJson = false) {
+function streamResponse(id, created, model, modelKey, messages, cascadeMessages, modelEnum, modelUid, useCascade, ckey, emulateTools, toolPreamble, reqId, wantJson = false, callerKey = '') {
   return {
     status: 200,
     stream: true,
@@ -1040,6 +1067,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
     },
     async handler(res) {
       const abortController = new AbortController();
+      let unregisterSse = () => {};
       res.on('close', () => {
         if (!res.writableEnded) {
           log.info('Client disconnected mid-stream, aborting upstream');
@@ -1049,6 +1077,16 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
       const send = (data) => {
         if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
       };
+      unregisterSse = registerSseController({
+        abort(reason) {
+          send(chatStreamError(reason || 'server shutting down', 'server_error', 'server_shutdown'));
+          if (!res.writableEnded) {
+            res.write('data: [DONE]\n\n');
+            res.end();
+          }
+          abortController.abort(reason);
+        },
+      });
 
       // SSE heartbeat: keep the TCP/HTTP connection alive through any silent
       // period (LS warmup, Cascade "thinking", queue wait). `:` prefix is a
@@ -1081,6 +1119,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
             usage: cachedUsage(messages, cached.text) });
           if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
         } finally {
+          unregisterSse();
           stopHeartbeat();
         }
         return;
@@ -1114,8 +1153,8 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
       const reuseEnabled = shouldUseCascadeReuse({ useCascade, emulateTools, modelKey })
         && (isExperimentalEnabled('cascadeConversationReuse') || shouldForceCascadeReuse({ emulateTools, modelKey }));
       const strictReuse = shouldUseStrictCascadeReuse({ emulateTools, modelKey });
-      const fpBefore = reuseEnabled ? fingerprintBefore(messages, modelKey) : null;
-      let reuseEntry = reuseEnabled ? poolCheckout(fpBefore) : null;
+      const fpBefore = reuseEnabled ? fingerprintBefore(messages, modelKey, callerKey) : null;
+      let reuseEntry = reuseEnabled ? poolCheckout(fpBefore, callerKey) : null;
       let checkedOutReuseEntry = reuseEntry;
       if (reuseEntry) log.info(`Chat: cascade reuse HIT cascadeId=${reuseEntry.cascadeId.slice(0, 8)}… stream model=${model}`);
 
@@ -1312,7 +1351,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
             emitThinking(pathStreamThinking.flush());
             // Pool check-in on success (cascade only)
             if (reuseEnabled && cascadeResult?.cascadeId && (accText || collectedToolCalls.length)) {
-              const fpAfter = fingerprintAfter(messages, modelKey);
+              const fpAfter = fingerprintAfter(messages, modelKey, callerKey);
               poolCheckin(fpAfter, {
                 cascadeId: cascadeResult.cascadeId,
                 sessionId: cascadeResult.sessionId,
@@ -1321,7 +1360,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
                 stepOffset: Number.isFinite(cascadeResult.stepOffset) ? cascadeResult.stepOffset : reuseEntry?.stepOffset,
                 generatorOffset: Number.isFinite(cascadeResult.generatorOffset) ? cascadeResult.generatorOffset : reuseEntry?.generatorOffset,
                 createdAt: reuseEntry?.createdAt,
-              });
+              }, callerKey);
             }
             // success
             if (hadSuccess) reportSuccess(currentApiKey);
@@ -1367,9 +1406,9 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
             const isRateLimit = /rate limit|rate_limit|too many requests|quota/i.test(err.message);
             const isInternal = /internal error occurred.*error id/i.test(err.message);
             if (isAuthFail) reportError(currentApiKey);
-            if (isRateLimit) { markRateLimited(currentApiKey, rateLimitCooldownMs(err.message), modelKey); err.isRateLimit = true; err.isModelError = true; }
-            if (isInternal) { reportInternalError(currentApiKey); err.isModelError = true; }
-            if (err.isModelError && !isRateLimit && !isInternal) {
+            if (isRateLimit) { markRateLimited(currentApiKey, rateLimitCooldownMs(err.message), modelKey); err.isRateLimit = true; err.isModelError = true; err.kind ||= 'model_error'; }
+            if (isInternal) { reportInternalError(currentApiKey); err.isModelError = true; err.kind ||= 'transient_stall'; }
+            if (err.isModelError && err.kind !== 'transient_stall' && !isRateLimit && !isInternal) {
               updateCapability(currentApiKey, modelKey, false, 'model_error');
             }
             if (isRateLimit && strictReuse && checkedOutReuseEntry && fpBefore && checkedOutReuseEntry.apiKey === currentApiKey) {
@@ -1420,7 +1459,7 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
             log.error(`Chat[${reqId}] stream: ${tried.length}/${tried.length} accounts hit upstream_internal_error — surfacing upstream_transient_error`);
           }
           if (!hadSuccess && checkedOutReuseEntry && fpBefore) {
-            poolCheckin(fpBefore, checkedOutReuseEntry);
+            poolCheckin(fpBefore, checkedOutReuseEntry, callerKey);
             log.info(`Chat[${reqId}]: restored checked-out cascade after failed stream`);
           }
 
@@ -1431,21 +1470,16 @@ function streamResponse(id, created, model, modelKey, messages, cascadeMessages,
             // output). Close cleanly with a plain stop — the caller saw
             // whatever partial content we produced. Error details only
             // go to the server log.
-            send({ id, object: 'chat.completion.chunk', created, model,
-              choices: [{ index: 0, delta: {}, finish_reason: 'stop' }] });
+            send(chatStreamError(errMsg, allInternal ? 'upstream_transient_error' : 'upstream_error'));
             log.warn(`Stream: partial response delivered then failed (${errMsg})`);
           } else {
-            if (!rolePrinted) {
-              send({ id, object: 'chat.completion.chunk', created, model,
-                choices: [{ index: 0, delta: { role: 'assistant', content: '' }, finish_reason: null }] });
-            }
-            send({ id, object: 'chat.completion.chunk', created, model,
-              choices: [{ index: 0, delta: { content: `\n[Error: ${errMsg}]` }, finish_reason: 'stop' }] });
+            send(chatStreamError(errMsg, allInternal ? 'upstream_transient_error' : 'upstream_error'));
           }
           res.write('data: [DONE]\n\n');
         } catch {}
         if (!res.writableEnded) res.end();
       } finally {
+        unregisterSse();
         stopHeartbeat();
       }
     },

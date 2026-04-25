@@ -17,15 +17,31 @@ const MAX_ENTRIES = 500;
 const _store = new Map();
 const _stats = { hits: 0, misses: 0, stores: 0, evictions: 0 };
 
-function stripBase64(messages) {
+function digestBase64Data(data = '', mime = '') {
+  const compact = String(data).replace(/\s/g, '');
+  const bytes = Math.floor(compact.length * 3 / 4) - (compact.endsWith('==') ? 2 : compact.endsWith('=') ? 1 : 0);
+  const hash = createHash('sha256').update(compact).digest('hex').slice(0, 32);
+  return `[base64:${String(mime || 'application/octet-stream').toLowerCase()}:sha256=${hash}:bytes=${Math.max(0, bytes)}]`;
+}
+
+function normalizeDataUrl(url) {
+  const clean = String(url || '').replace(/\s/g, '');
+  const m = clean.match(/^data:([^;,]+)(?:;[^,]*)?;base64,(.*)$/i);
+  if (!m) return url;
+  return `data:${m[1].toLowerCase()};base64,${digestBase64Data(m[2], m[1])}`;
+}
+
+function normalizeBinary(messages) {
   if (!Array.isArray(messages)) return messages;
   return messages.map(m => {
     if (!Array.isArray(m.content)) return m;
     return { ...m, content: m.content.map(p => {
       if (p.type === 'image_url' && typeof p.image_url?.url === 'string' && p.image_url.url.startsWith('data:'))
-        return { type: 'image_url', image_url: { url: '[base64]' } };
+        return { ...p, image_url: { ...p.image_url, url: normalizeDataUrl(p.image_url.url) } };
       if (p.type === 'image' && p.source?.type === 'base64')
-        return { type: 'image', source: { type: 'base64', data: '[base64]' } };
+        return { ...p, source: { ...p.source, data: digestBase64Data(p.source.data, p.source.media_type) } };
+      if ((p.type === 'file' || p.type === 'input_file') && typeof p.file?.file_data === 'string' && p.file.file_data.startsWith('data:'))
+        return { ...p, file: { ...p.file, file_data: normalizeDataUrl(p.file.file_data) } };
       return p;
     })};
   });
@@ -34,9 +50,13 @@ function stripBase64(messages) {
 function normalize(body) {
   return {
     model: body.model || '',
-    messages: stripBase64(body.messages || []),
+    messages: normalizeBinary(body.messages || []),
     tools: body.tools || null,
     tool_choice: body.tool_choice || null,
+    response_format: body.response_format || null,
+    reasoning_effort: body.reasoning_effort ?? null,
+    thinking: body.thinking || null,
+    stream_options: body.stream_options || null,
     temperature: body.temperature ?? null,
     top_p: body.top_p ?? null,
     max_tokens: body.max_tokens ?? null,

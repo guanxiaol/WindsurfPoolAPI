@@ -10,6 +10,10 @@
 import { inflateSync } from 'zlib';
 import { log } from './config.js';
 
+const MAX_STREAMS = 200;
+const MAX_STREAM_DECODED = 5 * 1024 * 1024;
+const MAX_TOTAL_DECODED = 25 * 1024 * 1024;
+
 /**
  * Extract text from a PDF buffer.
  * @param {Buffer} buf - Raw PDF bytes
@@ -17,6 +21,8 @@ import { log } from './config.js';
  */
 export function extractPdfText(buf) {
   const pages = [];
+  let streamCount = 0;
+  let totalDecoded = 0;
 
   // Find all stream...endstream blocks
   let pos = 0;
@@ -32,6 +38,8 @@ export function extractPdfText(buf) {
     if (endStream === -1) break;
 
     const streamData = buf.subarray(actualStart, endStream);
+    streamCount++;
+    if (streamCount > MAX_STREAMS) throw new Error('PDF stream count exceeds safety limit');
 
     // Check if this stream has FlateDecode by looking back at the dictionary
     const dictStart = Math.max(0, streamStart - 500);
@@ -41,11 +49,18 @@ export function extractPdfText(buf) {
     let decoded;
     try {
       if (isFlate) {
-        decoded = inflateSync(streamData).toString('latin1');
+        const inflated = inflateSync(streamData, { maxOutputLength: MAX_STREAM_DECODED });
+        if (inflated.length > MAX_STREAM_DECODED) throw new Error('PDF decoded content exceeds safety limit');
+        totalDecoded += inflated.length;
+        if (totalDecoded > MAX_TOTAL_DECODED) throw new Error('PDF decoded content exceeds safety limit');
+        decoded = inflated.toString('latin1');
       } else {
+        totalDecoded += streamData.length;
+        if (streamData.length > MAX_STREAM_DECODED || totalDecoded > MAX_TOTAL_DECODED) throw new Error('PDF decoded content exceeds safety limit');
         decoded = streamData.toString('latin1');
       }
-    } catch {
+    } catch (e) {
+      if (/limit|exceed|maxOutputLength|Buffer larger/i.test(e.message) || e.code === 'ERR_BUFFER_TOO_LARGE') throw e;
       pos = endStream + 10;
       continue;
     }
@@ -142,6 +157,9 @@ export function tryExtractPdf(base64Data) {
     return { text, pageCount };
   } catch (e) {
     log.warn(`PDF extraction failed: ${e.message}`);
+    if (/exceeds safety limit|maxOutputLength|too large|Buffer larger/i.test(e.message) || e.code === 'ERR_BUFFER_TOO_LARGE') {
+      return { text: 'PDF 内容无法提取', pageCount: 0 };
+    }
     return null;
   }
 }
